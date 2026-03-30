@@ -178,6 +178,19 @@ function perspective(fovy, aspect, near, far) {
     );
 }
 
+// Build a frustum projection matrix with explicit bounds.
+function frustum(left, right, bottom, top, near, far) {
+    var rl = right - left;
+    var tb = top - bottom;
+    var fn = far - near;
+    return mat4(
+        2*near/rl, 0, (right+left)/rl, 0,
+        0, 2*near/tb, (top+bottom)/tb, 0,
+        0, 0, -(far+near)/fn, -2*far*near/fn,
+        0, 0, -1, 0
+    );
+}
+
 // Map point X in segment PQ onto segment AB.
 function map_point(P, Q, A, B, X) {
     if (P.length !== Q.length || A.length !== B.length) {
@@ -220,23 +233,10 @@ window.flatten = flatten;
 window.mult = mult;
 
 // Flatten nested arrays into a Float32Array for WebGL buffers.
-let flattenDepth = 0;
 function flatten(data) {
-    flattenDepth++;
-    if (flattenDepth > 10) {
-        console.error('flatten: recursion depth exceeded! Data:', data);
-        flattenDepth--;
-        throw new Error('flatten: recursion depth exceeded');
-    }
-    try {
-        console.log('flatten input (depth ' + flattenDepth + '):', data, Array.isArray(data), typeof data);
-    } catch (e) {
-        console.log('flatten input: (unloggable)', typeof data);
-    }
-    if (data instanceof Float32Array) { flattenDepth--; return data; }
-    if (!Array.isArray(data)) { flattenDepth--; return new Float32Array([data]); }
-    // If not an array of arrays, just return as Float32Array
-    if (!Array.isArray(data[0])) { flattenDepth--; return new Float32Array(data); }
+    if (data instanceof Float32Array) { return data; }
+    if (!Array.isArray(data)) { return new Float32Array([data]); }
+    if (!Array.isArray(data[0])) { return new Float32Array(data); }
     var out = [];
     for (var i = 0; i < data.length; i++) {
         if (Array.isArray(data[i])) {
@@ -247,6 +247,5 @@ function flatten(data) {
             out.push(data[i]);
         }
     }
-    flattenDepth--;
     return new Float32Array(out);
 }

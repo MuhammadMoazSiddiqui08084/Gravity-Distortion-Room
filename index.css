@@ -1,0 +1,299 @@
+/* ============================================================
+   INDEX.CSS — Gravity Distortion Room | Dark Futuristic Theme
+   ============================================================ */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@400;600;700&display=swap');
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    overflow: hidden;
+    background: #000;
+    font-family: 'Inter', sans-serif;
+    color: #e0e0e0;
+}
+
+canvas#glcanvas {
+    display: block;
+    width: 100vw;
+    height: 100vh;
+    cursor: crosshair;
+}
+
+/* ---- Click-to-look prompt ---- */
+#click-prompt {
+    position: fixed;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(0, 255, 150, 0.3);
+    border-radius: 12px;
+    padding: 20px 36px;
+    text-align: center;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 14px;
+    color: #00ff96;
+    letter-spacing: 2px;
+    pointer-events: none;
+    animation: pulse 2s ease-in-out infinite;
+    z-index: 100;
+    transition: opacity 0.4s ease, visibility 0.4s ease;
+    opacity: 1;
+    visibility: visible;
+}
+#click-prompt.hidden {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    animation: none;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 0.7; transform: translate(-50%, -50%) scale(1); }
+    50% { opacity: 1; transform: translate(-50%, -50%) scale(1.03); }
+}
+
+/* ---- Glassmorphism Panel Base ---- */
+.glass-panel {
+    background: rgba(8, 10, 20, 0.75);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(100, 120, 255, 0.15);
+    border-radius: 10px;
+    padding: 14px 18px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+}
+
+/* ---- HUD: Top-Left Info ---- */
+#hud-info {
+    position: fixed;
+    top: 16px; left: 16px;
+    min-width: 200px;
+    z-index: 10;
+    font-size: 12px;
+}
+#hud-info .hud-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    color: #00e5ff;
+    margin-bottom: 10px;
+    letter-spacing: 1.5px;
+}
+#hud-info .hud-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 3px 0;
+    border-bottom: 1px solid rgba(100, 120, 255, 0.08);
+}
+#hud-info .hud-label { color: #8890b0; }
+#hud-info .hud-value { color: #c0d0ff; font-weight: 500; font-variant-numeric: tabular-nums; }
+
+/* ---- HUD: Top-Right FPS ---- */
+#hud-fps {
+    position: fixed;
+    top: 16px; right: 16px;
+    z-index: 10;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 11px;
+    min-width: 80px;
+    text-align: center;
+}
+
+/* ---- Gravity Control Panel ---- */
+#gravity-panel {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 14px 24px;
+}
+#gravity-panel .panel-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 11px;
+    color: #ff9500;
+    letter-spacing: 1.5px;
+    white-space: nowrap;
+}
+
+/* Gravity slider */
+.gravity-slider-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.gravity-slider-wrap label {
+    font-size: 11px;
+    color: #8890b0;
+    white-space: nowrap;
+}
+.gravity-slider-wrap .grav-val {
+    font-size: 13px;
+    color: #ff9500;
+    font-weight: 600;
+    min-width: 32px;
+    text-align: right;
+}
+
+input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 140px;
+    height: 4px;
+    border-radius: 2px;
+    background: linear-gradient(90deg, #1a1c30, #ff9500);
+    outline: none;
+}
+input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: #ff9500;
+    border: 2px solid #fff;
+    cursor: pointer;
+    box-shadow: 0 0 8px rgba(255, 149, 0, 0.5);
+}
+
+/* Direction buttons */
+.dir-buttons {
+    display: flex;
+    gap: 4px;
+}
+.dir-btn {
+    background: rgba(100, 120, 255, 0.1);
+    border: 1px solid rgba(100, 120, 255, 0.25);
+    color: #8890b0;
+    font-family: 'Inter', sans-serif;
+    font-size: 11px;
+    padding: 6px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.dir-btn:hover {
+    background: rgba(100, 120, 255, 0.25);
+    color: #c0d0ff;
+    border-color: rgba(100, 120, 255, 0.5);
+}
+.dir-btn.active {
+    background: rgba(255, 149, 0, 0.2);
+    border-color: #ff9500;
+    color: #ff9500;
+    box-shadow: 0 0 8px rgba(255, 149, 0, 0.2);
+}
+
+/* Reset button */
+.reset-btn {
+    background: rgba(255, 50, 50, 0.1);
+    border: 1px solid rgba(255, 50, 50, 0.3);
+    color: #ff5050;
+    font-family: 'Inter', sans-serif;
+    font-size: 11px;
+    padding: 6px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.reset-btn:hover {
+    background: rgba(255, 50, 50, 0.25);
+    border-color: #ff5050;
+    box-shadow: 0 0 8px rgba(255, 50, 50, 0.3);
+}
+
+/* ---- Help Panel ---- */
+#help-panel {
+    position: fixed;
+    top: 16px; right: 110px;
+    z-index: 10;
+    max-width: 280px;
+    font-size: 11px;
+    line-height: 1.6;
+}
+#help-panel .help-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 12px;
+    color: #00e5ff;
+    margin-bottom: 8px;
+    letter-spacing: 1px;
+}
+#help-panel .help-row {
+    display: flex;
+    gap: 8px;
+    padding: 2px 0;
+}
+#help-panel .help-key {
+    min-width: 55px;
+    color: #00ff96;
+    font-weight: 600;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 10px;
+}
+#help-panel .help-desc { color: #8890b0; }
+
+/* ---- View Controls Panel ---- */
+#view-panel {
+    position: fixed;
+    bottom: 20px; right: 16px;
+    z-index: 10;
+    font-size: 11px;
+}
+#view-panel .panel-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 11px;
+    color: #00e5ff;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+}
+#view-panel .view-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+#view-panel .view-label {
+    min-width: 36px;
+    color: #8890b0;
+}
+#view-panel .view-val {
+    min-width: 40px;
+    text-align: right;
+    color: #c0d0ff;
+    font-weight: 500;
+}
+#view-panel input[type="range"] {
+    width: 100px;
+    background: linear-gradient(90deg, #1a1c30, #00e5ff);
+}
+#view-panel input[type="range"]::-webkit-slider-thumb {
+    background: #00e5ff;
+    box-shadow: 0 0 8px rgba(0, 229, 255, 0.5);
+}
+
+/* ---- Crosshair ---- */
+#crosshair {
+    position: fixed;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 20px; height: 20px;
+    pointer-events: none;
+    z-index: 50;
+}
+#crosshair::before, #crosshair::after {
+    content: '';
+    position: absolute;
+    background: rgba(255, 255, 255, 0.35);
+}
+#crosshair::before {
+    width: 2px; height: 20px;
+    top: 0; left: 50%;
+    transform: translateX(-50%);
+}
+#crosshair::after {
+    width: 20px; height: 2px;
+    left: 0; top: 50%;
+    transform: translateY(-50%);
+}
