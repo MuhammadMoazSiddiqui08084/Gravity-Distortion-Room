@@ -231,7 +231,7 @@ window.rotate = rotate;
 window.perspective = perspective;
 window.flatten = flatten;
 window.mult = mult;
-
+window.frustum = frustum;
 // Flatten nested arrays into a Float32Array for WebGL buffers.
 function flatten(data) {
     if (data instanceof Float32Array) { return data; }
