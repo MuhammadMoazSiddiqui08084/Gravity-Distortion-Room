@@ -131,6 +131,28 @@ var GPhysics = {
             body.velocity[0] *= this.airDrag;
             body.velocity[1] *= this.airDrag;
             body.velocity[2] *= this.airDrag;
+            
+            // Directional Damping: zero out non-gravity velocity gradually to prevent messy bouncing
+            if (hasGravity) {
+                var gDir = this.gravityDir;
+                var vDotG = body.velocity[0]*gDir[0] + body.velocity[1]*gDir[1] + body.velocity[2]*gDir[2];
+                var flowVx = vDotG * gDir[0];
+                var flowVy = vDotG * gDir[1];
+                var flowVz = vDotG * gDir[2];
+
+                var latVx = body.velocity[0] - flowVx;
+                var latVy = body.velocity[1] - flowVy;
+                var latVz = body.velocity[2] - flowVz;
+
+                var lateralDrag = Math.pow(0.5, dt * 10.0);
+                latVx *= lateralDrag;
+                latVy *= lateralDrag;
+                latVz *= lateralDrag;
+                
+                body.velocity[0] = flowVx + latVx;
+                body.velocity[1] = flowVy + latVy;
+                body.velocity[2] = flowVz + latVz;
+            }
 
             //velocity magnitude preventing explosion
             var speed = Math.sqrt(
@@ -249,6 +271,11 @@ var GPhysics = {
                 body.velocity[1] *= fric;
             }
         }
+        
+        // Final sanity hard-clamp
+        body.position[0] = Math.max(-hw + r, Math.min(hw - r, body.position[0]));
+        body.position[1] = Math.max(r, Math.min(rh - r, body.position[1]));
+        body.position[2] = Math.max(-hd + r, Math.min(hd - r, body.position[2]));
     },
 
     _collideObjects: function() {

@@ -44,7 +44,7 @@
     <div class="help-row"><span class="help-key">Q / E</span><span class="help-desc">Roll left / right</span></div>
     <div class="help-row"><span class="help-key">+ / −</span><span class="help-desc">Increase / decrease speed</span></div>
     <div class="help-row"><span class="help-key">1</span><span class="help-desc">Wireframe shading</span></div>
-    <div class="help-row"><span class="help-key">2</span><span class="help-desc">Flat shading (Gouraud)</span></div>
+    <div class="help-row"><span class="help-key">2</span><span class="help-desc">Flat shading</span></div>
     <div class="help-row"><span class="help-key">3</span><span class="help-desc">Smooth shading (Phong)</span></div>
     <div class="help-row"><span class="help-key">R</span><span class="help-desc">Reset objects</span></div>
     <div class="help-row"><span class="help-key">H</span><span class="help-desc">Toggle this panel</span></div>
@@ -127,7 +127,7 @@ uniform vec3 uAmbientColor;
 uniform vec3 uCameraPosition;
 uniform float uSpecularStrength;
 uniform float uShininess;
-uniform int uRenderMode;       // 0 = solid color (wireframe), 1 = lit
+uniform int uRenderMode;       // 0 = wireframe, 1 = flat, 2 = smooth (phong)
 uniform vec3 uSolidColor;
 
 void main() {
@@ -146,7 +146,12 @@ void main() {
     float NdotL = max(dot(N, L), 0.0);
     vec3 diffuse = NdotL * uLightColor * vColor;
 
-    // Specular (Phong reflection)
+    if (uRenderMode == 1) { // True simplistic flat shading
+        gl_FragColor = vec4(ambient + diffuse, 1.0);
+        return;
+    }
+
+    // Specular (Phong reflection) for uRenderMode == 2
     vec3 V = normalize(uCameraPosition - vWorldPosition);
     vec3 R = reflect(-L, N);
     float spec = pow(max(dot(V, R), 0.0), uShininess);

@@ -130,7 +130,8 @@ var GRenderer = {
             gl.drawArrays(gl.LINES, 0, buffers.wireVertexCount);
         } else {
             //Flat or Smooth shading
-            gl.uniform1i(loc.renderMode, 1);
+            var renderMode = (this.shadingMode === 2) ? 1 : 2;
+            gl.uniform1i(loc.renderMode, renderMode);
             // Positions
             gl.bindBuffer(gl.ARRAY_BUFFER, buffers.position);
             gl.vertexAttribPointer(loc.aPosition, 3, gl.FLOAT, false, 0, 0);

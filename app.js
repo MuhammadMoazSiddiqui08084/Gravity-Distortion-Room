@@ -320,7 +320,7 @@ function updateUI() {
     var el;
     el = document.getElementById("info-shading");
     if (el) {
-        var modes = { 1: "Wireframe", 2: "Flat (Gouraud)", 3: "Smooth (Phong)" };
+        var modes = { 1: "Wireframe", 2: "Flat", 3: "Smooth (Phong)" };
         el.textContent = modes[GRenderer.shadingMode] || "Unknown";
     }
     el = document.getElementById("info-speed");
