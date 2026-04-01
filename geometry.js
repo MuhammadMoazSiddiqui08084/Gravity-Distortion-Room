@@ -300,3 +300,162 @@ function generateRoomQuadZY(depth, height, color, facingPosX) {
         boundingRadius:Math.sqrt(hd*hd+hh*hh)
     };
 }
+
+
+
+
+
+
+
+// ESCHER STAIRCASE
+// Generates a helical spiral staircase as a series of programmatic box-steps.
+// Each step is placed along a circular helix path using trigonometry.
+// Parameters:
+//   numSteps  - number of steps in the full loop (default 16)
+//   stepH     - height of each step riser, in world units (default 0.25)
+//   stepD     - depth of each step tread, in world units (default 0.28)
+//   radius    - radius of the helix circle (default 0.7)
+//   color     - RGB array e.g. [0.22, 0.78, 0.75]
+function generateEscherStaircase(numSteps, stepH, stepD, radius, color) {
+    numSteps = numSteps || 16;
+    stepH    = stepH    || 0.25;
+    stepD    = stepD    || 0.28;
+    radius   = radius   || 0.7;
+    color    = color    || [0.22, 0.78, 0.75];
+
+    var stepW     = 0.28;              // radial width of each step slab
+    var totalRise = numSteps * stepH;  // total vertical height of the full loop
+    var TAU       = 2 * Math.PI;
+
+    // ── Raw arrays (filled below) ───────────────────────────────────────────
+    var pos = [], fn = [], sn = [], col = [], wp = [];
+
+    // ── Math helpers ────────────────────────────────────────────────────────
+    function cross(a, b) {
+        return [
+            a[1]*b[2] - a[2]*b[1],
+            a[2]*b[0] - a[0]*b[2],
+            a[0]*b[1] - a[1]*b[0]
+        ];
+    }
+    function sub(a, b) { return [a[0]-b[0], a[1]-b[1], a[2]-b[2]]; }
+    function normalize(v) {
+        var l = Math.sqrt(v[0]*v[0] + v[1]*v[1] + v[2]*v[2]) || 1;
+        return [v[0]/l, v[1]/l, v[2]/l];
+    }
+    function faceNormal(a, b, d) {
+        return normalize(cross(sub(b, a), sub(d, a)));
+    }
+
+    // ── Add one quad (2 triangles) with a given flat face normal ────────────
+    // verts: [A, B, C, D] — 4 corners of the quad
+    // The smooth normal per vertex = normalize(vertex position) is used for
+    // smooth shading; for a staircase this gives a nice radial gradient.
+    function addFlatQuad(verts, normal) {
+        // Triangle 1: A B C
+        // Triangle 2: A C D
+        var tris = [verts[0], verts[1], verts[2],
+                    verts[0], verts[2], verts[3]];
+        for (var t = 0; t < 6; t++) {
+            var p = tris[t];
+            pos.push(p[0], p[1], p[2]);
+            fn.push(normal[0], normal[1], normal[2]);
+            // smooth normal = radial direction from Y axis
+            var sl = Math.sqrt(p[0]*p[0] + p[2]*p[2]) || 1;
+            sn.push(p[0]/sl, 0, p[2]/sl);
+            col.push(color[0], color[1], color[2]);
+        }
+    }
+
+    // ── Add one step box given its 8 corners ────────────────────────────────
+    // Corner layout (matching geometry.js cube convention):
+    //   0=inner-front-bottom  1=outer-front-bottom
+    //   2=outer-front-top     3=inner-front-top
+    //   4=inner-back-bottom   5=outer-back-bottom
+    //   6=outer-back-top      7=inner-back-top
+    function addStepBox(c) {
+        // Top face (most visible — the tread you step on)
+        addFlatQuad([c[3],c[2],c[6],c[7]], faceNormal(c[3],c[2],c[7]));
+        // Bottom face
+        addFlatQuad([c[4],c[5],c[1],c[0]], faceNormal(c[4],c[5],c[0]));
+        // Front face (the riser)
+        addFlatQuad([c[0],c[1],c[2],c[3]], faceNormal(c[0],c[1],c[3]));
+        // Back face
+        addFlatQuad([c[5],c[4],c[7],c[6]], faceNormal(c[5],c[4],c[6]));
+        // Outer side face (away from center)
+        addFlatQuad([c[1],c[5],c[6],c[2]], faceNormal(c[1],c[5],c[2]));
+        // Inner side face (toward center)
+        addFlatQuad([c[4],c[0],c[3],c[7]], faceNormal(c[4],c[0],c[7]));
+
+        // Wireframe — 12 edges of the box
+        var edges = [
+            [c[0],c[1]],[c[1],c[2]],[c[2],c[3]],[c[3],c[0]], // front face ring
+            [c[4],c[5]],[c[5],c[6]],[c[6],c[7]],[c[7],c[4]], // back face ring
+            [c[0],c[4]],[c[1],c[5]],[c[2],c[6]],[c[3],c[7]]  // connecting edges
+        ];
+        for (var e = 0; e < edges.length; e++) {
+            var a = edges[e][0], b = edges[e][1];
+            wp.push(a[0],a[1],a[2], b[0],b[1],b[2]);
+        }
+    }
+
+    // ── Generate each step along the helix ──────────────────────────────────
+    for (var i = 0; i < numSteps; i++) {
+        var t     = i / numSteps;
+        var angle = t * TAU;
+
+        // Position of this step's center on the helix
+        var cx = Math.cos(angle) * radius;
+        var cz = Math.sin(angle) * radius;
+        var cy = t * totalRise - totalRise / 2; // vertically centered around 0
+
+        // Tangent = direction along the circle (horizontal, step goes this way)
+        var tx = -Math.sin(angle);
+        var tz =  Math.cos(angle);
+
+        // Outward radial direction
+        var ox = Math.cos(angle);
+        var oz = Math.sin(angle);
+
+        var hw   = stepW / 2;  // half radial width
+        var yBot = cy;
+        var yTop = cy + stepH;
+
+        // Inner and outer radial edges
+        var ix = cx - ox * hw,  iz = cz - oz * hw;  // inner
+        var ex = cx + ox * hw,  ez = cz + oz * hw;  // outer (ex = "exterior")
+
+        // Back offset along tangent (the depth of the tread)
+        var bx = tx * stepD,  bz = tz * stepD;
+
+        // 8 corners of this step's box
+        var corners = [
+            [ix,    yBot, iz   ],  // 0 inner front bottom
+            [ex,    yBot, ez   ],  // 1 outer front bottom
+            [ex,    yTop, ez   ],  // 2 outer front top
+            [ix,    yTop, iz   ],  // 3 inner front top
+            [ix+bx, yBot, iz+bz],  // 4 inner back bottom
+            [ex+bx, yBot, ez+bz],  // 5 outer back bottom
+            [ex+bx, yTop, ez+bz],  // 6 outer back top
+            [ix+bx, yTop, iz+bz],  // 7 inner back top
+        ];
+
+        addStepBox(corners);
+    }
+
+    // ── Pack and return (identical structure to all other geometry.js objects)
+    var vertexCount    = numSteps * 6 * 6;  // 6 faces × 6 verts per face × numSteps
+    var wireVertCount  = wp.length / 3;
+    var boundingRadius = radius + stepW / 2 + stepD;
+
+    return {
+        positions:       new Float32Array(pos),
+        flatNormals:     new Float32Array(fn),
+        smoothNormals:   new Float32Array(sn),
+        colors:          new Float32Array(col),
+        vertexCount:     vertexCount,
+        wirePositions:   new Float32Array(wp),
+        wireVertexCount: wireVertCount,
+        boundingRadius:  boundingRadius
+    };
+}

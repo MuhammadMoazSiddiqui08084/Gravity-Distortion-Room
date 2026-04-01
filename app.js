@@ -85,6 +85,7 @@ async function buildScene() {
         { gen: function(){return generateIcosphere(0.6, 2, [0.95, 0.6, 0.1]);}, pos:[0, 8, 0], scale:1.0 },
         { gen: function(){return generateTorus(0.6, 0.2, 24, 12, [1.0, 0.45, 0.35]);}, pos:[-4, 7, -1], scale:1.0 },
         { gen: function(){return generateTorus(0.5, 0.15, 20, 10, [0.5, 0.3, 0.95]);}, pos:[1, 2, -4], scale:1.0 },
+        { gen: function(){return generateEscherStaircase(16, 0.25, 0.28, 0.7, [0.22, 0.78, 0.75]);}, pos:[0, 5, 0], scale:1.0 },
         { file: "tetrahedron.ply", color: [0.95, 0.35, 0.40], pos:[5, 5.5, -2], scale:0.85 },
         { file: "cube.ply",        color: [0.15, 0.85, 0.95], pos:[-5, 6.5, 1], scale:0.80 },
         { file: "octahedron.ply",  color: [0.30, 0.90, 0.50], pos:[4, 3.0, 4], scale:0.85 },
