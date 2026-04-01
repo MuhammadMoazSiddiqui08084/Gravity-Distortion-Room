@@ -1,11 +1,8 @@
 "use strict";
-// ============================================================
-// APP.JS — Main Application: Gravity Distortion Room
-// Initialization, scene setup, event handling, animation loop
-// ============================================================
+//Main Application of Gravity Distortion Room
 
 var gl, program;
-var sceneObjects = [];  // { mesh, buffers, body (or null), modelMatrix, isStatic }
+var sceneObjects = [];  //mesh, buffers, body, modelMatrix, isStatic
 var lastTime = 0;
 var fps = 0, frameCount = 0, fpsTimer = 0;
 var pointerLocked = false;
@@ -13,7 +10,7 @@ var pointerLocked = false;
 // Room dimensions
 var ROOM_W = 16, ROOM_H = 10, ROOM_D = 16;
 
-// ===================== INIT =====================
+//init
 window.onload = function() {
     var canvas = document.getElementById("glcanvas");
     canvas.width = window.innerWidth;
@@ -25,7 +22,7 @@ window.onload = function() {
     gl.viewport(0, 0, canvas.width, canvas.height);
     gl.clearColor(0.02, 0.02, 0.05, 1.0);
     gl.enable(gl.DEPTH_TEST);
-    // No backface culling — we're inside the room looking at walls from behind
+    //No backface culling
 
     program = initShaders(gl, "vertex-shader", "fragment-shader");
     if (!program || program === -1) {
@@ -42,43 +39,43 @@ window.onload = function() {
     requestAnimationFrame(animate);
 };
 
-// ===================== SCENE =====================
+//Scene
 function buildScene() {
-    // ----- Room (static) — built as explicit inward-facing surfaces -----
+    //Room
     var hw = ROOM_W/2, hh = ROOM_H, hd = ROOM_D/2;
 
-    // Floor (grid checkerboard)
+    //Floor
     var floor = generateGridFloor(ROOM_W, ROOM_D, 16,
         [0.15, 0.16, 0.22], [0.10, 0.10, 0.15]);
     var floorBuf = GRenderer.createBuffers(floor);
     sceneObjects.push({ buffers: floorBuf, modelMatrix: mat4(), isStatic: true });
 
-    // Ceiling — quad in XZ plane at y=ROOM_H, normal pointing down
+    //Ceiling 
     var ceiling = generateRoomQuadXZ(ROOM_W, ROOM_D, [0.08, 0.08, 0.12], false);
     var ceilingBuf = GRenderer.createBuffers(ceiling);
     sceneObjects.push({ buffers: ceilingBuf, modelMatrix: translate(0, ROOM_H, 0), isStatic: true });
 
-    // Back wall (-Z) — quad in XY plane at z=-hd, normal pointing +Z (inward)
+    // Back wall
     var backWall = generateRoomQuadXY(ROOM_W, ROOM_H, [0.12, 0.11, 0.18], true);
     var backBuf = GRenderer.createBuffers(backWall);
     sceneObjects.push({ buffers: backBuf, modelMatrix: translate(0, ROOM_H/2, -hd), isStatic: true });
 
-    // Front wall (+Z) — quad in XY plane at z=+hd, normal pointing -Z (inward)
+    // Front wall
     var frontWall = generateRoomQuadXY(ROOM_W, ROOM_H, [0.12, 0.11, 0.18], false);
     var frontBuf = GRenderer.createBuffers(frontWall);
     sceneObjects.push({ buffers: frontBuf, modelMatrix: translate(0, ROOM_H/2, hd), isStatic: true });
 
-    // Left wall (-X) — quad in ZY plane at x=-hw, normal pointing +X (inward)
+    // Left wall
     var leftWall = generateRoomQuadZY(ROOM_D, ROOM_H, [0.13, 0.12, 0.19], true);
     var leftBuf = GRenderer.createBuffers(leftWall);
     sceneObjects.push({ buffers: leftBuf, modelMatrix: translate(-hw, ROOM_H/2, 0), isStatic: true });
 
-    // Right wall (+X) — quad in ZY plane at x=+hw, normal pointing -X (inward)
+    // Right wall
     var rightWall = generateRoomQuadZY(ROOM_D, ROOM_H, [0.13, 0.12, 0.19], false);
     var rightBuf = GRenderer.createBuffers(rightWall);
     sceneObjects.push({ buffers: rightBuf, modelMatrix: translate(hw, ROOM_H/2, 0), isStatic: true });
 
-    // ----- Floating Objects (dynamic, physics) -----
+    //Floating Objects
     var objects = [
         { gen: function(){return generateCube(1.2, [0.0, 0.85, 0.95]);}, pos:[2, 6, -2], scale:1.0 },
         { gen: function(){return generateCube(0.8, [0.95, 0.75, 0.1]);}, pos:[-3, 4, 3], scale:1.0 },
@@ -104,12 +101,12 @@ function buildScene() {
         });
     }
 
-    // Set room bounds in physics
+    //room bounds in physics
     GPhysics.roomHalfW = hw;
     GPhysics.roomHalfD = hd;
     GPhysics.roomHeight = ROOM_H;
 
-    // Set camera room bounds
+    //camera room bounds
     GCamera.roomBounds = {
         minX: -hw + 0.5, maxX: hw - 0.5,
         minY: 0.5, maxY: ROOM_H - 0.5,
@@ -117,10 +114,10 @@ function buildScene() {
     };
     GCamera.position = [0, 5, 6];
     GCamera.yaw = -90;
-    GCamera.pitch = -15; // Look slightly down to see objects
+    GCamera.pitch = -15; //Look slightly down to see objects
 }
 
-// ===================== ANIMATION LOOP =====================
+// Animation loop
 function animate(timestamp) {
     var now = performance.now() / 1000.0;
     var dt = now - lastTime;
@@ -136,11 +133,11 @@ function animate(timestamp) {
         updateFPS();
     }
 
-    // Update systems
+    //Update systems
     GCamera.update(dt);
     GPhysics.update(dt);
 
-    // Render
+    //Render
     render();
 
     requestAnimationFrame(animate);
@@ -163,7 +160,7 @@ function render() {
         if (obj.isStatic) {
             modelMatrix = obj.modelMatrix;
         } else {
-            // Build model matrix from physics body
+            //Build model matrix from physics body
             var body = obj.body;
             var t = translate(body.position[0], body.position[1], body.position[2]);
             var rx = rotate(body.rotation[0], [1,0,0]);
@@ -177,18 +174,18 @@ function render() {
     }
 }
 
-// ===================== EVENT HANDLING =====================
+//Event handlers
 function setupEventListeners(canvas) {
-    // Keyboard
+    //Keyboard
     document.addEventListener("keydown", function(e) {
         GCamera.keys[e.key] = true;
 
-        // Shading mode
+        //Shading mode
         if (e.key === "1") { GRenderer.shadingMode = 1; updateUI(); }
         if (e.key === "2") { GRenderer.shadingMode = 2; updateUI(); }
         if (e.key === "3") { GRenderer.shadingMode = 3; updateUI(); }
 
-        // Speed control
+        //Speed control
         if (e.key === "=" || e.key === "+") {
             GCamera.speed = Math.min(20, GCamera.speed + 1);
             updateUI();
@@ -198,18 +195,18 @@ function setupEventListeners(canvas) {
             updateUI();
         }
 
-        // Reset (R)
+        // Reset
         if (e.key === "r" || e.key === "R") {
             GPhysics.reset();
         }
 
-        // Toggle help (H)
+        // Toggle help
         if (e.key === "h" || e.key === "H") {
             var help = document.getElementById("help-panel");
             help.style.display = (help.style.display === "none") ? "block" : "none";
         }
 
-        // Prevent scrolling with space/arrows
+        //Prevent scrolling with space/arrows
         if ([" ", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].indexOf(e.key) >= 0) {
             e.preventDefault();
         }
@@ -219,14 +216,14 @@ function setupEventListeners(canvas) {
         GCamera.keys[e.key] = false;
     });
 
-    // Pointer lock for mouse-look
+    // Pointer lock for mouse look
     canvas.addEventListener("click", function() {
         canvas.requestPointerLock();
     });
 
     document.addEventListener("pointerlockchange", function() {
         pointerLocked = (document.pointerLockElement === canvas);
-        // Show/hide click-to-enter prompt
+        //Show/hide click-to-enter
         var prompt = document.getElementById("click-prompt");
         if (pointerLocked) {
             prompt.classList.add("hidden");
@@ -241,7 +238,7 @@ function setupEventListeners(canvas) {
         }
     });
 
-    // Gravity slider
+    //Gravity slider
     var slider = document.getElementById("gravity-slider");
     if (slider) {
         slider.addEventListener("input", function() {
@@ -251,7 +248,7 @@ function setupEventListeners(canvas) {
         });
     }
 
-    // Gravity direction buttons
+    //Gravity direction buttons
     var dirButtons = document.querySelectorAll("[data-gravity-dir]");
     for (var i = 0; i < dirButtons.length; i++) {
         dirButtons[i].addEventListener("click", function() {
@@ -265,7 +262,7 @@ function setupEventListeners(canvas) {
         });
     }
 
-    // Reset button
+    //Reset button
     var resetBtn = document.getElementById("reset-btn");
     if (resetBtn) {
         resetBtn.addEventListener("click", function() {
@@ -277,7 +274,7 @@ function setupEventListeners(canvas) {
         });
     }
 
-    // View parameter controls
+    //View parameter controls
     var viewControls = ["fov-slider", "near-slider", "far-slider"];
     for (var i = 0; i < viewControls.length; i++) {
         var ctrl = document.getElementById(viewControls[i]);
@@ -291,7 +288,7 @@ function setupEventListeners(canvas) {
         }
     }
 
-    // Window resize
+    //Window resize
     window.addEventListener("resize", function() {
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
@@ -299,7 +296,7 @@ function setupEventListeners(canvas) {
     });
 }
 
-// ===================== UI UPDATES =====================
+// UI Update
 function updateUI() {
     var el;
     el = document.getElementById("info-shading");

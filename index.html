@@ -9,16 +9,16 @@
 </head>
 <body>
 
-<!-- ===== WebGL Canvas ===== -->
+<!--  WebGL Canvas  -->
 <canvas id="glcanvas"></canvas>
 
-<!-- ===== Crosshair ===== -->
+<!-- Crosshair -->
 <div id="crosshair"></div>
 
-<!-- ===== Click to Look Prompt ===== -->
+<!-- Click to Look Prompt -->
 <div id="click-prompt">CLICK TO ENTER</div>
 
-<!-- ===== HUD: Status Info (top-left) ===== -->
+<!-- Status Info (top-left) -->
 <div id="hud-info" class="glass-panel">
     <div class="hud-title">GRAVITY ROOM</div>
     <div class="hud-row"><span class="hud-label">Shading</span><span class="hud-value" id="info-shading">Smooth (Phong)</span></div>
@@ -29,12 +29,12 @@
     <div class="hud-row"><span class="hud-label">Far</span><span class="hud-value" id="info-far">100.0</span></div>
 </div>
 
-<!-- ===== HUD: FPS (top-right) ===== -->
+<!-- FPS (top-right) -->
 <div id="hud-fps" class="glass-panel">
     <span id="info-fps">0</span> FPS
 </div>
 
-<!-- ===== Help Panel ===== -->
+<!-- Help Panel -->
 <div id="help-panel" class="glass-panel">
     <div class="help-title">CONTROLS</div>
     <div class="help-row"><span class="help-key">W A S D</span><span class="help-desc">Move forward/left/back/right</span></div>
@@ -50,7 +50,7 @@
     <div class="help-row"><span class="help-key">H</span><span class="help-desc">Toggle this panel</span></div>
 </div>
 
-<!-- ===== Gravity Control Panel (bottom center) ===== -->
+<!-- Gravity Control Panel(bottom center) -->
 <div id="gravity-panel" class="glass-panel">
     <div class="panel-title">GRAVITY</div>
     <div class="gravity-slider-wrap">
@@ -69,7 +69,7 @@
     <button class="reset-btn" id="reset-btn">RESET</button>
 </div>
 
-<!-- ===== View Controls Panel (bottom right) ===== -->
+<!-- View Controls Panel (bottom right) -->
 <div id="view-panel" class="glass-panel">
     <div class="panel-title">VIEW BOUNDS</div>
     <div class="view-row">
@@ -89,7 +89,7 @@
     </div>
 </div>
 
-<!-- ===== VERTEX SHADER ===== -->
+<!-- VERTEX SHADER -->
 <script id="vertex-shader" type="x-shader/x-vertex">
 attribute vec3 aPosition;
 attribute vec3 aNormal;
@@ -113,7 +113,7 @@ void main() {
 }
 </script>
 
-<!-- ===== FRAGMENT SHADER ===== -->
+<!-- FRAGMENT SHADER -->
 <script id="fragment-shader" type="x-shader/x-fragment">
 precision mediump float;
 
@@ -162,7 +162,6 @@ void main() {
 }
 </script>
 
-<!-- ===== JavaScript (raw WebGL, no frameworks) ===== -->
 <script src="common.js"></script>
 <script src="webgl-utils.js"></script>
 <script src="initShaders.js"></script>

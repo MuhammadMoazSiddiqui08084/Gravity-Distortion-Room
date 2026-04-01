@@ -1,17 +1,15 @@
 "use strict";
-// ============================================================
-// RENDERER.JS — WebGL Rendering with 3 Shading Modes
-// Wireframe (edges only), Flat (per-face normals), Smooth (Phong)
-// ============================================================
+//WebGL Rendering with 3 Shading Modes
+//Wireframe (edges only), Flat (per-face normals), Smooth (Phong)
 
 var GRenderer = {
     gl: null,
     program: null,
-    // Uniform locations
+    //Uniform locations
     loc: {},
-    // Shading mode: 1=wireframe, 2=flat, 3=smooth
+    //Shading mode: 1=wireframe, 2=flat, 3=smooth
     shadingMode: 3,
-    // Lighting
+    //Lighting
     lightDir: [0.3, 0.8, 0.5],
     lightColor: [1.0, 0.95, 0.9],
     ambientColor: [0.25, 0.22, 0.3],
@@ -22,7 +20,7 @@ var GRenderer = {
     init: function(gl, program) {
         this.gl = gl;
         this.program = program;
-        // Cache uniform locations
+        //Cache uniform locations
         this.loc.modelMatrix = gl.getUniformLocation(program, "uModelMatrix");
         this.loc.viewMatrix = gl.getUniformLocation(program, "uViewMatrix");
         this.loc.projMatrix = gl.getUniformLocation(program, "uProjectionMatrix");
@@ -40,7 +38,7 @@ var GRenderer = {
         this.loc.aColor = gl.getAttribLocation(program, "aColor");
     },
 
-    // Create WebGL buffers for a mesh (call once per mesh)
+    //WebGL buffers for mesh
     createBuffers: function(mesh) {
         var gl = this.gl;
         var buf = {};
@@ -69,7 +67,7 @@ var GRenderer = {
         return buf;
     },
 
-    // Set camera uniforms (call once per frame)
+    //camera uniforms
     setCamera: function(viewMatrix, projMatrix, cameraPos) {
         var gl = this.gl;
         gl.uniformMatrix4fv(this.loc.viewMatrix, false, flatten(viewMatrix));
@@ -77,7 +75,7 @@ var GRenderer = {
         gl.uniform3fv(this.loc.cameraPos, new Float32Array(cameraPos));
     },
 
-    // Set lighting uniforms (call once per frame)
+    //lighting uniforms
     setLighting: function() {
         var gl = this.gl;
         gl.uniform3fv(this.loc.lightDir, new Float32Array(this.lightDir));
@@ -87,7 +85,7 @@ var GRenderer = {
         gl.uniform1f(this.loc.shininess, this.shininess);
     },
 
-    // Compute 3x3 normal matrix from 4x4 model matrix (inverse transpose)
+    //3x3 normal matrix from 4x4 model matrix
     computeNormalMatrix: function(m) {
         // Extract 3x3
         var a00=m[0][0],a01=m[1][0],a02=m[2][0];
@@ -97,7 +95,7 @@ var GRenderer = {
         var det = a00*(a11*a22-a12*a21) - a01*(a10*a22-a12*a20) + a02*(a10*a21-a11*a20);
         if (Math.abs(det) < 1e-6) det = 1;
         var id = 1.0/det;
-        // Inverse transpose (transposed cofactor / det)
+        //Inverse transpose
         return new Float32Array([
             (a11*a22-a12*a21)*id, (a12*a20-a10*a22)*id, (a10*a21-a11*a20)*id,
             (a02*a21-a01*a22)*id, (a00*a22-a02*a20)*id, (a01*a20-a00*a21)*id,
@@ -105,34 +103,33 @@ var GRenderer = {
         ]);
     },
 
-    // Draw a single object with its model matrix
+    //single object with its model matrix
     drawObject: function(buffers, modelMatrix) {
         var gl = this.gl;
         var loc = this.loc;
 
-        // Set model matrix
+        //Set model matrix
         gl.uniformMatrix4fv(loc.modelMatrix, false, flatten(modelMatrix));
 
-        // Set normal matrix
+        //Set normal matrix
         var nmat = this.computeNormalMatrix(modelMatrix);
         gl.uniformMatrix3fv(loc.normalMatrix, false, nmat);
 
         if (this.shadingMode === 1) {
-            // WIREFRAME MODE
+            //wireframe mode
             gl.uniform1i(loc.renderMode, 0);
             gl.uniform3fv(loc.solidColor, new Float32Array(this.wireColor));
             // Bind wireframe positions
             gl.bindBuffer(gl.ARRAY_BUFFER, buffers.wire);
             gl.vertexAttribPointer(loc.aPosition, 3, gl.FLOAT, false, 0, 0);
             gl.enableVertexAttribArray(loc.aPosition);
-            // Disable unused attribs or provide dummy data
             gl.disableVertexAttribArray(loc.aNormal);
             gl.disableVertexAttribArray(loc.aColor);
             gl.vertexAttrib3f(loc.aNormal, 0, 1, 0);
             gl.vertexAttrib3f(loc.aColor, 1, 1, 1);
             gl.drawArrays(gl.LINES, 0, buffers.wireVertexCount);
         } else {
-            // FLAT or SMOOTH shading
+            //Flat or Smooth shading
             gl.uniform1i(loc.renderMode, 1);
             // Positions
             gl.bindBuffer(gl.ARRAY_BUFFER, buffers.position);

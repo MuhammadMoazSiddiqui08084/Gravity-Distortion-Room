@@ -1,12 +1,8 @@
 "use strict";
-// ============================================================
-// GEOMETRY.JS — Procedural 3D Mesh Generation (WebGL)
-// All objects generated programmatically via mathematics.
-// Each generator returns: { positions, flatNormals, smoothNormals,
-//   colors, vertexCount, wirePositions, wireVertexCount, boundingRadius }
-// ============================================================
+//Procedural 3D Mesh Generation
+//All objects via mathematics.
 
-// ---------- CUBE ----------
+//CUBE
 function generateCube(size, color) {
     var s = size / 2;
     var corners = [
@@ -49,7 +45,7 @@ function generateCube(size, color) {
     };
 }
 
-// ---------- ICOSPHERE ----------
+//ICOSPHERE
 function _icoMidpoint(a, b, verts, cache) {
     var key = Math.min(a,b)+"_"+Math.max(a,b);
     if (cache[key]!==undefined) return cache[key];
@@ -129,7 +125,7 @@ function generateIcosphere(radius, subdivisions, color) {
     };
 }
 
-// ---------- TORUS ----------
+//TORUS
 function generateTorus(majorR, minorR, majSegs, minSegs, color) {
     var grid=[];
     for(var i=0;i<=majSegs;i++){
@@ -191,9 +187,7 @@ function generateTorus(majorR, minorR, majSegs, minSegs, color) {
     };
 }
 
-// ---------- ROOM QUAD ----------
-// Generates a single quad (2 triangles) for a wall/floor/ceiling.
-// The quad lies in the XY plane at z=0, then you transform it with a model matrix.
+// ROOM QUAD
 function generateQuad(width, height, color) {
     var hw=width/2, hh=height/2;
     var pos = [
@@ -217,8 +211,7 @@ function generateQuad(width, height, color) {
     };
 }
 
-// ---------- GRID FLOOR ----------
-// Generates a floor with visible grid lines via alternating colors.
+//Grid based Floor
 function generateGridFloor(width, depth, divisions, color1, color2) {
     var pos=[],fn=[],col=[],wp=[];
     var cellW=width/divisions, cellD=depth/divisions;
@@ -243,15 +236,11 @@ function generateGridFloor(width, depth, divisions, color1, color2) {
     };
 }
 
-// ---------- ROOM QUADS (axis-aligned, no transforms needed) ----------
-
-// XZ plane quad (for ceiling/floor). normalDown=true → normal faces -Y, false → +Y is default floor
 function generateRoomQuadXZ(width, depth, color, normalDown) {
     var hw=width/2, hd=depth/2;
     var ny = normalDown ? -1 : 1;
     var pos, nm;
     if (normalDown) {
-        // CCW from below: wind for -Y normal
         pos = [ -hw,0,-hd,  -hw,0,hd,  hw,0,hd,   -hw,0,-hd,  hw,0,hd,  hw,0,-hd ];
     } else {
         pos = [ -hw,0,-hd,  hw,0,-hd,  hw,0,hd,   -hw,0,-hd,  hw,0,hd,  -hw,0,hd ];
@@ -268,7 +257,7 @@ function generateRoomQuadXZ(width, depth, color, normalDown) {
     };
 }
 
-// XY plane quad (for front/back walls). facingPosZ=true → normal faces +Z, false → -Z
+//XY plane quad for front/back walls
 function generateRoomQuadXY(width, height, color, facingPosZ) {
     var hw=width/2, hh=height/2;
     var nz = facingPosZ ? 1 : -1;
@@ -290,7 +279,7 @@ function generateRoomQuadXY(width, height, color, facingPosZ) {
     };
 }
 
-// ZY plane quad (for left/right walls). facingPosX=true → normal faces +X, false → -X
+// ZY plane quad for left/right walls
 function generateRoomQuadZY(depth, height, color, facingPosX) {
     var hd=depth/2, hh=height/2;
     var nx = facingPosX ? 1 : -1;

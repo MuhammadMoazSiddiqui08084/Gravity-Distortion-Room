@@ -1,43 +1,37 @@
 "use strict";
-// ============================================================
-// PHYSICS.JS — Gravity Simulation Engine
+//X-axis: Left(-) to Right(+)
+//Y-axis: Floor(0) to Ceiling(+)
+//Z-axis: Back(-) to Front(+)
 //
-// ROOM COORDINATE SYSTEM (right-handed):
-//   X-axis: Left(-) to Right(+)   | walls at x = ±roomHalfW
-//   Y-axis: Floor(0) to Ceiling(+) | floor y=0, ceiling y=roomHeight
-//   Z-axis: Back(-) to Front(+)    | walls at z = ±roomHalfD
-//
-// GRAVITY DIRECTIONS (always in room/world space):
-//   Down  = [0, -1, 0]  → objects fall toward floor  (y=0)
-//   Up    = [0, +1, 0]  → objects push toward ceiling (y=roomHeight)
-//   Left  = [-1, 0, 0]  → objects push toward left wall
-//   Right = [+1, 0, 0]  → objects push toward right wall
-//   Back  = [0, 0, -1]  → objects push toward back wall
-//   Front = [0, 0, +1]  → objects push toward front wall
-// ============================================================
+//Gravity directions
+//Down  = [0, -1, 0]  
+//Up    = [0, +1, 0]  
+//Left  = [-1, 0, 0]  
+//Right = [+1, 0, 0]  
+//Back  = [0, 0, -1]  
+//Front = [0, 0, +1] 
 
 var GPhysics = {
     bodies: [],
 
-    // Gravity state
+    //Gravity state
     gravity: [0, 0, 0],
     gravityMag: 0.0,
     gravityDir: [0, -1, 0],
 
-    // Room bounds (set by app.js during init)
+    //Room bounds
     roomHalfW: 8.0,
     roomHalfD: 8.0,
     roomHeight: 10.0,
 
-    // Physics tuning
+    //Physics tuning
     restitution: 0.25,
     friction: 0.80,
     airDrag: 0.998,
     bounceThreshold: 0.4,
-    maxSpeed: 30.0,         // Hard cap on velocity magnitude
-    subSteps: 4,            // Physics sub-steps per frame (prevents tunneling)
+    maxSpeed: 30.0,         //cap on velocity magnitude
+    subSteps: 4,            //Physics sub-steps per frame
 
-    // ======================== CREATE BODY ========================
     createBody: function(mesh, position, scale, rotationSpeed) {
         return {
             position: [position[0], position[1], position[2]],
@@ -58,7 +52,6 @@ var GPhysics = {
         };
     },
 
-    // ======================== SET GRAVITY ========================
     setGravity: function(direction, magnitude) {
         var wasActive = this.gravityMag > 0.1;
         var isActive  = magnitude > 0.1;
@@ -71,14 +64,14 @@ var GPhysics = {
             direction[2] * magnitude
         ];
 
-        // TRANSITION: Gravity OFF → ON — zero out drift for unanimous falling
+        // Transition of Gravity off to on
         if (!wasActive && isActive) {
             for (var i = 0; i < this.bodies.length; i++) {
                 this.bodies[i].velocity = [0, 0, 0];
             }
         }
 
-        // TRANSITION: Gravity ON → OFF — bounce objects away from resting surface
+        // Transition of Gravity on to off
         if (wasActive && !isActive) {
             this._releaseToZeroG();
         }
@@ -110,9 +103,7 @@ var GPhysics = {
         }
     },
 
-    // ======================== MAIN UPDATE ========================
-    // Uses sub-stepping: divides each frame into multiple small steps.
-    // This prevents objects from tunneling through walls even at high speed.
+    //prevents objects from tunneling through walls even at high speed
     update: function(dt) {
         if (dt > 0.05) dt = 0.05;
 
@@ -124,25 +115,24 @@ var GPhysics = {
         }
     },
 
-    // Single physics sub-step
     _stepOnce: function(dt) {
         var hasGravity = this.gravityMag > 0.1;
 
-        // --- Integrate velocities and positions ---
+        //Integrate velocities and positions
         for (var i = 0; i < this.bodies.length; i++) {
             var body = this.bodies[i];
 
-            // Apply gravity
+            //Apply gravity
             body.velocity[0] += this.gravity[0] * dt;
             body.velocity[1] += this.gravity[1] * dt;
             body.velocity[2] += this.gravity[2] * dt;
 
-            // Air drag
+            //Air drag
             body.velocity[0] *= this.airDrag;
             body.velocity[1] *= this.airDrag;
             body.velocity[2] *= this.airDrag;
 
-            // Clamp velocity magnitude (prevents explosion)
+            //velocity magnitude preventing explosion
             var speed = Math.sqrt(
                 body.velocity[0] * body.velocity[0] +
                 body.velocity[1] * body.velocity[1] +
@@ -155,38 +145,36 @@ var GPhysics = {
                 body.velocity[2] *= scale;
             }
 
-            // Move
+            //Movement
             body.position[0] += body.velocity[0] * dt;
             body.position[1] += body.velocity[1] * dt;
             body.position[2] += body.velocity[2] * dt;
 
-            // Rotation
+            //Rotation
             body.rotation[0] += body.angularVelocity[0] * dt;
             body.rotation[1] += body.angularVelocity[1] * dt;
             body.rotation[2] += body.angularVelocity[2] * dt;
 
-            // Spin damping when nearly at rest
+            //Spin
             if (hasGravity && speed < 0.5) {
                 body.angularVelocity[0] *= 0.95;
                 body.angularVelocity[1] *= 0.95;
                 body.angularVelocity[2] *= 0.95;
             }
 
-            // IMMEDIATE wall clamp after movement (first pass)
+            //wall clamp after movement
             this._clampToRoom(body);
         }
 
-        // --- Object-object collisions ---
+        //object collisions
         this._collideObjects();
 
-        // --- Wall clamp AGAIN after collisions (final authority) ---
+        //Wall clamp after collisions
         for (var i = 0; i < this.bodies.length; i++) {
             this._clampToRoom(this.bodies[i]);
         }
     },
 
-    // ======================== WALL COLLISION ========================
-    // Guarantees every body stays STRICTLY inside the room.
     _clampToRoom: function(body) {
         var r = body.radius;
         var hw = this.roomHalfW;
@@ -196,7 +184,7 @@ var GPhysics = {
         var fric = this.friction;
         var thresh = this.bounceThreshold;
 
-        // Floor (y minimum = r)
+        //Floor
         if (body.position[1] < r) {
             body.position[1] = r;
             if (body.velocity[1] < 0) {
@@ -207,7 +195,7 @@ var GPhysics = {
             }
         }
 
-        // Ceiling (y maximum = rh - r)
+        //Ceiling
         if (body.position[1] > rh - r) {
             body.position[1] = rh - r;
             if (body.velocity[1] > 0) {
@@ -218,7 +206,7 @@ var GPhysics = {
             }
         }
 
-        // Left wall (x minimum = -hw + r)
+        //Left wall
         if (body.position[0] < -hw + r) {
             body.position[0] = -hw + r;
             if (body.velocity[0] < 0) {
@@ -229,7 +217,7 @@ var GPhysics = {
             }
         }
 
-        // Right wall (x maximum = hw - r)
+        //Right wall
         if (body.position[0] > hw - r) {
             body.position[0] = hw - r;
             if (body.velocity[0] > 0) {
@@ -240,7 +228,7 @@ var GPhysics = {
             }
         }
 
-        // Back wall (z minimum = -hd + r)
+        //Back wall
         if (body.position[2] < -hd + r) {
             body.position[2] = -hd + r;
             if (body.velocity[2] < 0) {
@@ -251,7 +239,7 @@ var GPhysics = {
             }
         }
 
-        // Front wall (z maximum = hd - r)
+        //Front wall
         if (body.position[2] > hd - r) {
             body.position[2] = hd - r;
             if (body.velocity[2] > 0) {
@@ -263,7 +251,6 @@ var GPhysics = {
         }
     },
 
-    // ======================== OBJECT-OBJECT COLLISION ========================
     _collideObjects: function() {
         var hw = this.roomHalfW, hd = this.roomHalfD, rh = this.roomHeight;
 
@@ -329,7 +316,7 @@ var GPhysics = {
         }
     },
 
-    // ======================== RESET ========================
+
     reset: function() {
         for (var i = 0; i < this.bodies.length; i++) {
             var body = this.bodies[i];

@@ -1,6 +1,3 @@
-/* ============================================================
-   INDEX.CSS — Gravity Distortion Room | Dark Futuristic Theme
-   ============================================================ */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@400;600;700&display=swap');
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -19,7 +16,7 @@ canvas#glcanvas {
     cursor: crosshair;
 }
 
-/* ---- Click-to-look prompt ---- */
+/*Click-to-look prompt*/
 #click-prompt {
     position: fixed;
     top: 50%; left: 50%;
@@ -53,7 +50,7 @@ canvas#glcanvas {
     50% { opacity: 1; transform: translate(-50%, -50%) scale(1.03); }
 }
 
-/* ---- Glassmorphism Panel Base ---- */
+/*Glassmorphism Panel Base*/
 .glass-panel {
     background: rgba(8, 10, 20, 0.75);
     backdrop-filter: blur(12px);
@@ -64,7 +61,7 @@ canvas#glcanvas {
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
 }
 
-/* ---- HUD: Top-Left Info ---- */
+/*Top-Left Info */
 #hud-info {
     position: fixed;
     top: 16px; left: 16px;
@@ -89,7 +86,7 @@ canvas#glcanvas {
 #hud-info .hud-label { color: #8890b0; }
 #hud-info .hud-value { color: #c0d0ff; font-weight: 500; font-variant-numeric: tabular-nums; }
 
-/* ---- HUD: Top-Right FPS ---- */
+/*Top-Right FPS*/
 #hud-fps {
     position: fixed;
     top: 16px; right: 16px;
@@ -100,7 +97,7 @@ canvas#glcanvas {
     text-align: center;
 }
 
-/* ---- Gravity Control Panel ---- */
+/*Gravity Control Panel*/
 #gravity-panel {
     position: fixed;
     bottom: 20px;
@@ -204,7 +201,7 @@ input[type="range"]::-webkit-slider-thumb {
     box-shadow: 0 0 8px rgba(255, 50, 50, 0.3);
 }
 
-/* ---- Help Panel ---- */
+/*Help Panel*/
 #help-panel {
     position: fixed;
     top: 16px; right: 110px;
@@ -234,7 +231,7 @@ input[type="range"]::-webkit-slider-thumb {
 }
 #help-panel .help-desc { color: #8890b0; }
 
-/* ---- View Controls Panel ---- */
+/*View Controls Panel*/
 #view-panel {
     position: fixed;
     bottom: 20px; right: 16px;
@@ -273,7 +270,7 @@ input[type="range"]::-webkit-slider-thumb {
     box-shadow: 0 0 8px rgba(0, 229, 255, 0.5);
 }
 
-/* ---- Crosshair ---- */
+/*Crosshair*/
 #crosshair {
     position: fixed;
     top: 50%; left: 50%;
