@@ -11,7 +11,7 @@ var pointerLocked = false;
 var ROOM_W = 16, ROOM_H = 10, ROOM_D = 16;
 
 //init
-window.onload = function() {
+window.onload = async function() {
     var canvas = document.getElementById("glcanvas");
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
@@ -32,7 +32,7 @@ window.onload = function() {
     gl.useProgram(program);
 
     GRenderer.init(gl, program);
-    buildScene();
+    await buildScene();
     setupEventListeners(canvas);
     updateUI();
     lastTime = performance.now() / 1000.0;
@@ -40,7 +40,7 @@ window.onload = function() {
 };
 
 //Scene
-function buildScene() {
+async function buildScene() {
     //Room
     var hw = ROOM_W/2, hh = ROOM_H, hd = ROOM_D/2;
 
@@ -75,22 +75,27 @@ function buildScene() {
     var rightBuf = GRenderer.createBuffers(rightWall);
     sceneObjects.push({ buffers: rightBuf, modelMatrix: translate(hw, ROOM_H/2, 0), isStatic: true });
 
-    //Floating Objects
+    // Floating objects loaded from PLY solids.
     var objects = [
-        { gen: function(){return generateCube(1.2, [0.0, 0.85, 0.95]);}, pos:[2, 6, -2], scale:1.0 },
-        { gen: function(){return generateCube(0.8, [0.95, 0.75, 0.1]);}, pos:[-3, 4, 3], scale:1.0 },
-        { gen: function(){return generateCube(1.0, [0.3, 0.9, 0.5]);}, pos:[4, 7, 1], scale:0.7 },
-        { gen: function(){return generateIcosphere(0.7, 2, [0.9, 0.2, 0.7]);}, pos:[-2, 5, -3], scale:1.0 },
-        { gen: function(){return generateIcosphere(0.5, 2, [0.4, 0.95, 0.2]);}, pos:[3, 3, 2], scale:1.0 },
-        { gen: function(){return generateIcosphere(0.6, 2, [0.95, 0.6, 0.1]);}, pos:[0, 8, 0], scale:1.0 },
-        { gen: function(){return generateTorus(0.6, 0.2, 24, 12, [1.0, 0.45, 0.35]);}, pos:[-4, 7, -1], scale:1.0 },
-        { gen: function(){return generateTorus(0.5, 0.15, 20, 10, [0.5, 0.3, 0.95]);}, pos:[1, 2, -4], scale:1.0 },
+        { file: "tetrahedron.ply", color: [0.95, 0.35, 0.40], pos:[5, 5.5, -2], scale:0.85 },
+        { file: "cube.ply",        color: [0.15, 0.85, 0.95], pos:[-5, 6.5, 1], scale:0.80 },
+        { file: "octahedron.ply",  color: [0.30, 0.90, 0.50], pos:[4, 3.0, 4], scale:0.85 },
+        { file: "dodecahedron.ply",color: [0.90, 0.20, 0.70], pos:[-1, 7.8, 4], scale:0.75 },
+        { file: "icosahedron.ply", color: [0.95, 0.75, 0.10], pos:[-4, 2.8, -4], scale:0.85 }
     ];
+
+    assignSpawnPositions(objects, hw, hd, ROOM_H);
 
     GPhysics.bodies = [];
     for (var i = 0; i < objects.length; i++) {
         var def = objects[i];
-        var mesh = def.gen();
+        var mesh = null;
+        try {
+            mesh = await GPly.loadMesh(def.file, def.color);
+        } catch (err) {
+            console.error(err);
+            continue;
+        }
         var buf = GRenderer.createBuffers(mesh);
         var body = GPhysics.createBody(mesh, def.pos, def.scale, 30);
         GPhysics.bodies.push(body);
@@ -326,4 +331,62 @@ function updateUI() {
 function updateFPS() {
     var el = document.getElementById("info-fps");
     if (el) el.textContent = fps;
+}
+
+function assignSpawnPositions(objects, roomHalfW, roomHalfD, roomHeight) {
+    var placed = [];
+
+    for (var i = 0; i < objects.length; i++) {
+        var def = objects[i];
+        var radius = 0.95 * (def.scale || 1.0);
+        var bestPos = def.pos || [0, 5, 0];
+        var bestSeparation = -1;
+
+        // Try several random candidates and keep the one with best clearance.
+        for (var attempt = 0; attempt < 40; attempt++) {
+            var candidate = [
+                randRange(-roomHalfW + 1.4, roomHalfW - 1.4),
+                randRange(1.8, roomHeight - 1.2),
+                randRange(-roomHalfD + 1.4, roomHalfD - 1.4)
+            ];
+
+            var minGap = Infinity;
+            for (var j = 0; j < placed.length; j++) {
+                var p = placed[j];
+                var need = radius + p.radius + 0.9;
+                var gap = distance3(candidate, p.pos) - need;
+                if (gap < minGap) {
+                    minGap = gap;
+                }
+            }
+
+            if (placed.length === 0) {
+                minGap = 999;
+            }
+
+            if (minGap > bestSeparation) {
+                bestSeparation = minGap;
+                bestPos = candidate;
+            }
+
+            if (minGap > 0.2) {
+                bestPos = candidate;
+                break;
+            }
+        }
+
+        def.pos = bestPos;
+        placed.push({ pos: bestPos, radius: radius });
+    }
+}
+
+function randRange(min, max) {
+    return min + Math.random() * (max - min);
+}
+
+function distance3(a, b) {
+    var dx = a[0] - b[0];
+    var dy = a[1] - b[1];
+    var dz = a[2] - b[2];
+    return Math.sqrt(dx * dx + dy * dy + dz * dz);
 }
