@@ -1,16 +1,18 @@
 "use strict";
-//Main Application of Gravity Distortion Room
+// Main application bootstrap.
+// This file connects the camera, physics, renderer, loaders, and UI events into one render loop.
 
 var gl, program;
-var sceneObjects = [];  //mesh, buffers, body, modelMatrix, isStatic
+// Each scene entry is either a static room mesh or a simulated body driven by physics.
+var sceneObjects = [];  // mesh, buffers, body, modelMatrix, isStatic
 var lastTime = 0;
 var fps = 0, frameCount = 0, fpsTimer = 0;
 var pointerLocked = false;
 
-// Room dimensions
+// Room dimensions used by both rendering and physics.
 var ROOM_W = 16, ROOM_H = 10, ROOM_D = 16;
 
-//init
+// Start-up path: configure WebGL, create all scene content, then kick off animation.
 window.onload = async function() {
     var canvas = document.getElementById("glcanvas");
     canvas.width = window.innerWidth;
@@ -22,7 +24,7 @@ window.onload = async function() {
     gl.viewport(0, 0, canvas.width, canvas.height);
     gl.clearColor(0.02, 0.02, 0.05, 1.0);
     gl.enable(gl.DEPTH_TEST);
-    //No backface culling
+    // Backface culling is left disabled so the wireframe and interior room surfaces stay visible.
 
     program = initShaders(gl, "vertex-shader", "fragment-shader");
     if (!program || program === -1) {
@@ -39,43 +41,44 @@ window.onload = async function() {
     requestAnimationFrame(animate);
 };
 
-//Scene
+// Scene construction.
 async function buildScene() {
-    //Room
+    // Room bounds are used to place walls and to keep physics/camera movement inside the room.
     var hw = ROOM_W/2, hh = ROOM_H, hd = ROOM_D/2;
 
-    //Floor
+    // Static room geometry: floor.
     var floor = generateGridFloor(ROOM_W, ROOM_D, 16,
         [0.15, 0.16, 0.22], [0.10, 0.10, 0.15]);
     var floorBuf = GRenderer.createBuffers(floor);
     sceneObjects.push({ buffers: floorBuf, modelMatrix: mat4(), isStatic: true });
 
-    //Ceiling 
+    // Static room geometry: ceiling.
     var ceiling = generateRoomQuadXZ(ROOM_W, ROOM_D, [0.08, 0.08, 0.12], false);
     var ceilingBuf = GRenderer.createBuffers(ceiling);
     sceneObjects.push({ buffers: ceilingBuf, modelMatrix: translate(0, ROOM_H, 0), isStatic: true });
 
-    // Back wall
+    // Static room geometry: back wall.
     var backWall = generateRoomQuadXY(ROOM_W, ROOM_H, [0.12, 0.11, 0.18], true);
     var backBuf = GRenderer.createBuffers(backWall);
     sceneObjects.push({ buffers: backBuf, modelMatrix: translate(0, ROOM_H/2, -hd), isStatic: true });
 
-    // Front wall
+    // Static room geometry: front wall.
     var frontWall = generateRoomQuadXY(ROOM_W, ROOM_H, [0.12, 0.11, 0.18], false);
     var frontBuf = GRenderer.createBuffers(frontWall);
     sceneObjects.push({ buffers: frontBuf, modelMatrix: translate(0, ROOM_H/2, hd), isStatic: true });
 
-    // Left wall
+    // Static room geometry: left wall.
     var leftWall = generateRoomQuadZY(ROOM_D, ROOM_H, [0.13, 0.12, 0.19], true);
     var leftBuf = GRenderer.createBuffers(leftWall);
     sceneObjects.push({ buffers: leftBuf, modelMatrix: translate(-hw, ROOM_H/2, 0), isStatic: true });
 
-    // Right wall
+    // Static room geometry: right wall.
     var rightWall = generateRoomQuadZY(ROOM_D, ROOM_H, [0.13, 0.12, 0.19], false);
     var rightBuf = GRenderer.createBuffers(rightWall);
     sceneObjects.push({ buffers: rightBuf, modelMatrix: translate(hw, ROOM_H/2, 0), isStatic: true });
 
-    // Floating objects: keep procedural set and add PLY solids.
+    // Dynamic objects combine procedural meshes and imported PLY meshes.
+    // The same list drives geometry creation, physics body creation, and spawn placement.
     var objects = [
         { gen: function(){return generateCube(1.2, [0.0, 0.85, 0.95]);}, pos:[2, 6, -2], scale:1.0 },
         { gen: function(){return generateCube(0.8, [0.95, 0.75, 0.1]);}, pos:[-3, 4, 3], scale:1.0 },
@@ -94,8 +97,10 @@ async function buildScene() {
         { file: "icosahedron.ply", color: [0.95, 0.75, 0.10], pos:[-4, 2.8, -4], scale:0.85 }
     ];
 
+    // Spread spawn points apart so the simulation starts without heavy overlap.
     assignSpawnPositions(objects, hw, hd, ROOM_H);
 
+    // Every dynamic object gets a physics body plus a matching render mesh buffer.
     GPhysics.bodies = [];
     for (var i = 0; i < objects.length; i++) {
         var def = objects[i];
@@ -120,12 +125,12 @@ async function buildScene() {
         });
     }
 
-    //room bounds in physics
+    // Push room size into physics so wall clamps match the rendered room.
     GPhysics.roomHalfW = hw;
     GPhysics.roomHalfD = hd;
     GPhysics.roomHeight = ROOM_H;
 
-    //camera room bounds
+    // Clamp the camera to the same interior bounds used by physics.
     GCamera.roomBounds = {
         minX: -hw + 0.5, maxX: hw - 0.5,
         minY: 0.5, maxY: ROOM_H - 0.5,
@@ -133,16 +138,16 @@ async function buildScene() {
     };
     GCamera.position = [0, 5, 6];
     GCamera.yaw = -90;
-    GCamera.pitch = -15; //Look slightly down to see objects
+    GCamera.pitch = -15; // Look slightly down to see objects.
 }
 
-// Animation loop
+// Main animation loop: advance camera and physics, then render the next frame.
 function animate(timestamp) {
     var now = performance.now() / 1000.0;
     var dt = now - lastTime;
     lastTime = now;
 
-    // FPS counter
+    // FPS counter updates once per second so the HUD stays readable.
     frameCount++;
     fpsTimer += dt;
     if (fpsTimer >= 1.0) {
@@ -152,11 +157,11 @@ function animate(timestamp) {
         updateFPS();
     }
 
-    //Update systems
+    // Update simulation state before drawing.
     GCamera.update(dt);
     GPhysics.update(dt);
 
-    //Render
+    // Render the whole scene with the latest transforms.
     render();
 
     requestAnimationFrame(animate);
@@ -165,13 +170,16 @@ function animate(timestamp) {
 function render() {
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
+    // Build the current camera matrices from the live camera state.
     var aspect = gl.canvas.width / gl.canvas.height;
     var viewMatrix = GCamera.getViewMatrix();
     var projMatrix = GCamera.getProjectionMatrix(aspect);
 
+    // Send camera and lighting uniforms once per frame.
     GRenderer.setCamera(viewMatrix, projMatrix, GCamera.position);
     GRenderer.setLighting();
 
+    // Draw every scene object using either a fixed model matrix or physics-driven transform.
     for (var i = 0; i < sceneObjects.length; i++) {
         var obj = sceneObjects[i];
         var modelMatrix;
@@ -179,7 +187,7 @@ function render() {
         if (obj.isStatic) {
             modelMatrix = obj.modelMatrix;
         } else {
-            //Build model matrix from physics body
+            // Build model matrix from the physics body's position, rotation, and scale.
             var body = obj.body;
             var t = translate(body.position[0], body.position[1], body.position[2]);
             var rx = rotate(body.rotation[0], [1,0,0]);
@@ -193,18 +201,18 @@ function render() {
     }
 }
 
-//Event handlers
+// Input and UI event handlers.
 function setupEventListeners(canvas) {
-    //Keyboard
+    // Keyboard input drives camera movement, shading changes, resets, and help toggling.
     document.addEventListener("keydown", function(e) {
         GCamera.keys[e.key] = true;
 
-        //Shading mode
+        // Shading mode changes map directly to renderer state.
         if (e.key === "1") { GRenderer.shadingMode = 1; updateUI(); }
         if (e.key === "2") { GRenderer.shadingMode = 2; updateUI(); }
         if (e.key === "3") { GRenderer.shadingMode = 3; updateUI(); }
 
-        //Speed control
+        // Camera speed controls update both behavior and HUD display.
         if (e.key === "=" || e.key === "+") {
             GCamera.speed = Math.min(20, GCamera.speed + 1);
             updateUI();
@@ -214,35 +222,37 @@ function setupEventListeners(canvas) {
             updateUI();
         }
 
-        // Reset
+        // Reset the simulated bodies back to their original spawn points.
         if (e.key === "r" || e.key === "R") {
             GPhysics.reset();
         }
 
-        // Toggle help
+        // Toggle help panel visibility without affecting the simulation.
         if (e.key === "h" || e.key === "H") {
             var help = document.getElementById("help-panel");
             help.style.display = (help.style.display === "none") ? "block" : "none";
         }
 
-        //Prevent scrolling with space/arrows
+        // Prevent page scrolling when using movement keys.
         if ([" ", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].indexOf(e.key) >= 0) {
             e.preventDefault();
         }
     });
 
+    // Key releases clear the movement state so motion stops when the key is lifted.
     document.addEventListener("keyup", function(e) {
         GCamera.keys[e.key] = false;
     });
 
-    // Pointer lock for mouse look
+    // Pointer lock lets the mouse act like an infinite-look camera.
     canvas.addEventListener("click", function() {
         canvas.requestPointerLock();
     });
 
+    // The prompt mirrors whether the pointer is locked or not.
     document.addEventListener("pointerlockchange", function() {
         pointerLocked = (document.pointerLockElement === canvas);
-        //Show/hide click-to-enter
+        // Show or hide the click-to-enter prompt depending on pointer lock state.
         var prompt = document.getElementById("click-prompt");
         if (pointerLocked) {
             prompt.classList.add("hidden");
@@ -251,13 +261,14 @@ function setupEventListeners(canvas) {
         }
     });
 
+    // Mouse movement becomes yaw/pitch input only while pointer lock is active.
     document.addEventListener("mousemove", function(e) {
         if (pointerLocked) {
             GCamera.onMouseMove(e.movementX, e.movementY);
         }
     });
 
-    //Gravity slider
+    // Gravity magnitude slider feeds directly into the physics system.
     var slider = document.getElementById("gravity-slider");
     if (slider) {
         slider.addEventListener("input", function() {
@@ -267,13 +278,13 @@ function setupEventListeners(canvas) {
         });
     }
 
-    //Gravity direction buttons
+    // Direction buttons swap gravity direction without changing the magnitude.
     var dirButtons = document.querySelectorAll("[data-gravity-dir]");
     for (var i = 0; i < dirButtons.length; i++) {
         dirButtons[i].addEventListener("click", function() {
             var dir = this.getAttribute("data-gravity-dir").split(",").map(Number);
             GPhysics.setGravity(dir, GPhysics.gravityMag);
-            // Highlight active button
+            // Highlight the active direction button so the HUD matches the simulation.
             var all = document.querySelectorAll("[data-gravity-dir]");
             for (var j = 0; j < all.length; j++) all[j].classList.remove("active");
             this.classList.add("active");
@@ -281,7 +292,7 @@ function setupEventListeners(canvas) {
         });
     }
 
-    //Reset button
+    // Reset button returns both the physics state and gravity settings to defaults.
     var resetBtn = document.getElementById("reset-btn");
     if (resetBtn) {
         resetBtn.addEventListener("click", function() {
@@ -293,7 +304,7 @@ function setupEventListeners(canvas) {
         });
     }
 
-    //View parameter controls
+    // View sliders keep camera projection state in sync with the HUD.
     var viewControls = ["fov-slider", "near-slider", "far-slider"];
     for (var i = 0; i < viewControls.length; i++) {
         var ctrl = document.getElementById(viewControls[i]);
@@ -307,7 +318,7 @@ function setupEventListeners(canvas) {
         }
     }
 
-    //Window resize
+    // Keep the canvas and viewport matched to the browser window.
     window.addEventListener("resize", function() {
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
@@ -315,7 +326,7 @@ function setupEventListeners(canvas) {
     });
 }
 
-// UI Update
+// HUD helpers keep the DOM synchronized with renderer, camera, and physics state.
 function updateUI() {
     var el;
     el = document.getElementById("info-shading");
@@ -347,6 +358,7 @@ function updateFPS() {
     if (el) el.textContent = fps;
 }
 
+// Spawn placement tries to keep bodies separated so the first frames are stable.
 function assignSpawnPositions(objects, roomHalfW, roomHalfD, roomHeight) {
     var placed = [];
 
@@ -356,7 +368,7 @@ function assignSpawnPositions(objects, roomHalfW, roomHalfD, roomHeight) {
         var bestPos = def.pos || [0, 5, 0];
         var bestSeparation = -1;
 
-        // Try several random candidates and keep the one with best clearance.
+        // Try several random candidates and keep the one with the best clearance.
         for (var attempt = 0; attempt < 40; attempt++) {
             var candidate = [
                 randRange(-roomHalfW + 1.4, roomHalfW - 1.4),
@@ -398,6 +410,7 @@ function randRange(min, max) {
     return min + Math.random() * (max - min);
 }
 
+// Euclidean distance helper for spawn spacing.
 function distance3(a, b) {
     var dx = a[0] - b[0];
     var dy = a[1] - b[1];

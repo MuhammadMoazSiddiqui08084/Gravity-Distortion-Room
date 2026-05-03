@@ -1,8 +1,11 @@
+/* Global UI styling for the WebGL scene and on-screen HUD panels. */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@400;600;700&display=swap');
 
+/* Reset default spacing so the canvas and HUD can fill the viewport cleanly. */
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 body {
+    /* The scene fills the screen and the browser UI stays hidden. */
     overflow: hidden;
     background: #000;
     font-family: 'Inter', sans-serif;
@@ -10,13 +13,14 @@ body {
 }
 
 canvas#glcanvas {
+    /* The canvas is the full-screen rendering surface. */
     display: block;
     width: 100vw;
     height: 100vh;
     cursor: crosshair;
 }
 
-/*Click-to-look prompt*/
+/* Pointer-lock prompt shown before the camera becomes mouse-driven. */
 #click-prompt {
     position: fixed;
     top: 50%; left: 50%;
@@ -50,7 +54,7 @@ canvas#glcanvas {
     50% { opacity: 1; transform: translate(-50%, -50%) scale(1.03); }
 }
 
-/*Glassmorphism Panel Base*/
+/* Shared glass panel treatment used by all HUD containers. */
 .glass-panel {
     background: rgba(8, 10, 20, 0.75);
     backdrop-filter: blur(12px);
@@ -61,7 +65,7 @@ canvas#glcanvas {
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
 }
 
-/*Top-Left Info */
+/* Top-left info panel: current simulation and camera state. */
 #hud-info {
     position: fixed;
     top: 16px; left: 16px;
@@ -86,7 +90,7 @@ canvas#glcanvas {
 #hud-info .hud-label { color: #8890b0; }
 #hud-info .hud-value { color: #c0d0ff; font-weight: 500; font-variant-numeric: tabular-nums; }
 
-/*Top-Right FPS*/
+/* Top-right FPS panel. */
 #hud-fps {
     position: fixed;
     top: 16px; right: 16px;
@@ -97,7 +101,7 @@ canvas#glcanvas {
     text-align: center;
 }
 
-/*Gravity Control Panel*/
+/* Gravity control panel anchored at the bottom center. */
 #gravity-panel {
     position: fixed;
     bottom: 20px;
@@ -117,7 +121,7 @@ canvas#glcanvas {
     white-space: nowrap;
 }
 
-/* Gravity slider */
+/* Gravity magnitude slider. */
 .gravity-slider-wrap {
     display: flex;
     align-items: center;
@@ -155,7 +159,7 @@ input[type="range"]::-webkit-slider-thumb {
     box-shadow: 0 0 8px rgba(255, 149, 0, 0.5);
 }
 
-/* Direction buttons */
+/* Direction buttons for the six gravity axes. */
 .dir-buttons {
     display: flex;
     gap: 4px;
@@ -183,7 +187,7 @@ input[type="range"]::-webkit-slider-thumb {
     box-shadow: 0 0 8px rgba(255, 149, 0, 0.2);
 }
 
-/* Reset button */
+/* Reset button for restoring the simulation. */
 .reset-btn {
     background: rgba(255, 50, 50, 0.1);
     border: 1px solid rgba(255, 50, 50, 0.3);
@@ -201,7 +205,7 @@ input[type="range"]::-webkit-slider-thumb {
     box-shadow: 0 0 8px rgba(255, 50, 50, 0.3);
 }
 
-/*Help Panel*/
+/* Help panel listing the keyboard and mouse controls. */
 #help-panel {
     position: fixed;
     top: 16px; right: 110px;
@@ -231,7 +235,7 @@ input[type="range"]::-webkit-slider-thumb {
 }
 #help-panel .help-desc { color: #8890b0; }
 
-/*View Controls Panel*/
+/* View controls panel anchored at the bottom right. */
 #view-panel {
     position: fixed;
     bottom: 20px; right: 16px;

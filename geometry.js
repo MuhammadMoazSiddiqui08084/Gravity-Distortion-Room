@@ -1,8 +1,8 @@
 "use strict";
-//Procedural 3D Mesh Generation
-//All objects via mathematics.
+// Procedural 3D mesh generation.
+// This file builds every renderable surface from math instead of external modeling tools.
 
-//CUBE
+// Cube: used for room-friendly test objects and fallback meshes.
 function generateCube(size, color) {
     var s = size / 2;
     var corners = [
@@ -45,7 +45,7 @@ function generateCube(size, color) {
     };
 }
 
-//ICOSPHERE
+// Icosphere: recursive sphere-like mesh built by subdividing an icosahedron.
 function _icoMidpoint(a, b, verts, cache) {
     var key = Math.min(a,b)+"_"+Math.max(a,b);
     if (cache[key]!==undefined) return cache[key];
@@ -125,7 +125,7 @@ function generateIcosphere(radius, subdivisions, color) {
     };
 }
 
-//TORUS
+// Torus: parametric donut shape used as one of the floating objects.
 function generateTorus(majorR, minorR, majSegs, minSegs, color) {
     var grid=[];
     for(var i=0;i<=majSegs;i++){
@@ -187,7 +187,7 @@ function generateTorus(majorR, minorR, majSegs, minSegs, color) {
     };
 }
 
-// ROOM QUAD
+// Shared quad helper for room surfaces.
 function generateQuad(width, height, color) {
     var hw=width/2, hh=height/2;
     var pos = [
@@ -211,7 +211,7 @@ function generateQuad(width, height, color) {
     };
 }
 
-//Grid based Floor
+// Grid floor: alternating tiles give the room a clear sense of scale and motion.
 function generateGridFloor(width, depth, divisions, color1, color2) {
     var pos=[],fn=[],col=[],wp=[];
     var cellW=width/divisions, cellD=depth/divisions;
@@ -257,7 +257,7 @@ function generateRoomQuadXZ(width, depth, color, normalDown) {
     };
 }
 
-//XY plane quad for front/back walls
+// XY-plane quad for front and back walls.
 function generateRoomQuadXY(width, height, color, facingPosZ) {
     var hw=width/2, hh=height/2;
     var nz = facingPosZ ? 1 : -1;
@@ -279,7 +279,7 @@ function generateRoomQuadXY(width, height, color, facingPosZ) {
     };
 }
 
-// ZY plane quad for left/right walls
+// ZY-plane quad for left and right walls.
 function generateRoomQuadZY(depth, height, color, facingPosX) {
     var hd=depth/2, hh=height/2;
     var nx = facingPosX ? 1 : -1;
@@ -301,21 +301,8 @@ function generateRoomQuadZY(depth, height, color, facingPosX) {
     };
 }
 
-
-
-
-
-
-
-// ESCHER STAIRCASE
-// Generates a helical spiral staircase as a series of programmatic box-steps.
-// Each step is placed along a circular helix path using trigonometry.
-// Parameters:
-//   numSteps  - number of steps in the full loop (default 16)
-//   stepH     - height of each step riser, in world units (default 0.25)
-//   stepD     - depth of each step tread, in world units (default 0.28)
-//   radius    - radius of the helix circle (default 0.7)
-//   color     - RGB array e.g. [0.22, 0.78, 0.75]
+// Escher staircase: a helical staircase built from repeated boxes.
+// It is a stylized procedural object that demonstrates more complex geometry generation.
 function generateEscherStaircase(numSteps, stepH, stepD, radius, color) {
     numSteps = numSteps || 16;
     stepH    = stepH    || 0.25;
@@ -327,10 +314,10 @@ function generateEscherStaircase(numSteps, stepH, stepD, radius, color) {
     var totalRise = numSteps * stepH;  // total vertical height of the full loop
     var TAU       = 2 * Math.PI;
 
-    // ── Raw arrays (filled below) ───────────────────────────────────────────
+    // Raw arrays collect the final triangle and wireframe data.
     var pos = [], fn = [], sn = [], col = [], wp = [];
 
-    // ── Math helpers ────────────────────────────────────────────────────────
+    // Small local math helpers keep the object generator self-contained.
     function cross(a, b) {
         return [
             a[1]*b[2] - a[2]*b[1],
@@ -347,47 +334,37 @@ function generateEscherStaircase(numSteps, stepH, stepD, radius, color) {
         return normalize(cross(sub(b, a), sub(d, a)));
     }
 
-    // ── Add one quad (2 triangles) with a given flat face normal ────────────
-    // verts: [A, B, C, D] — 4 corners of the quad
-    // The smooth normal per vertex = normalize(vertex position) is used for
-    // smooth shading; for a staircase this gives a nice radial gradient.
+    // Add one quad as two triangles with a flat face normal.
     function addFlatQuad(verts, normal) {
-        // Triangle 1: A B C
-        // Triangle 2: A C D
         var tris = [verts[0], verts[1], verts[2],
                     verts[0], verts[2], verts[3]];
         for (var t = 0; t < 6; t++) {
             var p = tris[t];
             pos.push(p[0], p[1], p[2]);
             fn.push(normal[0], normal[1], normal[2]);
-            // smooth normal = radial direction from Y axis
+            // Smooth normal uses radial direction for a softer shaded look.
             var sl = Math.sqrt(p[0]*p[0] + p[2]*p[2]) || 1;
             sn.push(p[0]/sl, 0, p[2]/sl);
             col.push(color[0], color[1], color[2]);
         }
     }
 
-    // ── Add one step box given its 8 corners ────────────────────────────────
-    // Corner layout (matching geometry.js cube convention):
-    //   0=inner-front-bottom  1=outer-front-bottom
-    //   2=outer-front-top     3=inner-front-top
-    //   4=inner-back-bottom   5=outer-back-bottom
-    //   6=outer-back-top      7=inner-back-top
+    // Add one step box using the same corner ordering as the cube generator.
     function addStepBox(c) {
-        // Top face (most visible — the tread you step on)
+        // Top face: the tread you step on.
         addFlatQuad([c[3],c[2],c[6],c[7]], faceNormal(c[3],c[2],c[7]));
-        // Bottom face
+        // Bottom face.
         addFlatQuad([c[4],c[5],c[1],c[0]], faceNormal(c[4],c[5],c[0]));
-        // Front face (the riser)
+        // Front face: the riser.
         addFlatQuad([c[0],c[1],c[2],c[3]], faceNormal(c[0],c[1],c[3]));
-        // Back face
+        // Back face.
         addFlatQuad([c[5],c[4],c[7],c[6]], faceNormal(c[5],c[4],c[6]));
-        // Outer side face (away from center)
+        // Outer side face, away from the spiral center.
         addFlatQuad([c[1],c[5],c[6],c[2]], faceNormal(c[1],c[5],c[2]));
-        // Inner side face (toward center)
+        // Inner side face, toward the spiral center.
         addFlatQuad([c[4],c[0],c[3],c[7]], faceNormal(c[4],c[0],c[7]));
 
-        // Wireframe — 12 edges of the box
+        // Wireframe collects the 12 box edges so line mode can reuse the same shape.
         var edges = [
             [c[0],c[1]],[c[1],c[2]],[c[2],c[3]],[c[3],c[0]], // front face ring
             [c[4],c[5]],[c[5],c[6]],[c[6],c[7]],[c[7],c[4]], // back face ring
@@ -399,36 +376,36 @@ function generateEscherStaircase(numSteps, stepH, stepD, radius, color) {
         }
     }
 
-    // ── Generate each step along the helix ──────────────────────────────────
+    // Generate each step along the helix.
     for (var i = 0; i < numSteps; i++) {
         var t     = i / numSteps;
         var angle = t * TAU;
 
-        // Position of this step's center on the helix
+        // Center point of the current step on the helix.
         var cx = Math.cos(angle) * radius;
         var cz = Math.sin(angle) * radius;
         var cy = t * totalRise - totalRise / 2; // vertically centered around 0
 
-        // Tangent = direction along the circle (horizontal, step goes this way)
+        // Tangent direction points along the walking path.
         var tx = -Math.sin(angle);
         var tz =  Math.cos(angle);
 
-        // Outward radial direction
+        // Outward radial direction.
         var ox = Math.cos(angle);
         var oz = Math.sin(angle);
 
-        var hw   = stepW / 2;  // half radial width
+        var hw   = stepW / 2;  // Half radial width.
         var yBot = cy;
         var yTop = cy + stepH;
 
-        // Inner and outer radial edges
+        // Inner and outer radial edges.
         var ix = cx - ox * hw,  iz = cz - oz * hw;  // inner
         var ex = cx + ox * hw,  ez = cz + oz * hw;  // outer (ex = "exterior")
 
-        // Back offset along tangent (the depth of the tread)
+        // Back offset along the tangent creates tread depth.
         var bx = tx * stepD,  bz = tz * stepD;
 
-        // 8 corners of this step's box
+        // Eight corners of the current step box.
         var corners = [
             [ix,    yBot, iz   ],  // 0 inner front bottom
             [ex,    yBot, ez   ],  // 1 outer front bottom
@@ -443,7 +420,7 @@ function generateEscherStaircase(numSteps, stepH, stepD, radius, color) {
         addStepBox(corners);
     }
 
-    // ── Pack and return (identical structure to all other geometry.js objects)
+    // Pack and return using the same mesh structure as the other generators.
     var vertexCount    = numSteps * 6 * 6;  // 6 faces × 6 verts per face × numSteps
     var wireVertCount  = wp.length / 3;
     var boundingRadius = radius + stepW / 2 + stepD;

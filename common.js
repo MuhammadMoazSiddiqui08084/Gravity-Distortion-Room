@@ -1,7 +1,9 @@
 "use strict";
 
-// Vector constructors.
+// Shared math helpers.
+// app.js, camera.js, geometry.js, and renderer.js all depend on these constructors and matrix utilities.
 
+// Vector constructors.
 function vec2(x, y) {
     if (arguments.length !== 2) {
         throw "vec2 requires exactly 2 arguments";
@@ -23,7 +25,7 @@ function vec4(x, y, z, w) {
     return [x, y, z, w];
 }
 
-// Matrix constructors; row-major args stored as column arrays.
+// Matrix constructors; arguments are provided in row-major order and stored as column arrays.
 
 function mat2(a, b, c, d) {
     if (arguments.length !== 4) {
@@ -223,7 +225,7 @@ function scalem(x, y, z) {
     );
 }
 
-// Make all math helpers globally available for mesh.js
+// Make the core math helpers globally available to the older project files.
 window.scalem = scalem;
 window.mat4 = mat4;
 window.translate = translate;

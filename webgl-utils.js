@@ -57,6 +57,7 @@
  * visible.
  */
 
+// Shared WebGL context helpers used by app.js during startup.
 WebGLUtils = function() {
 
 /**

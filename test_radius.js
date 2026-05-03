@@ -1,8 +1,10 @@
-// Remove strict mode for eval context
+// Smoke test for the procedural mesh generators and their bounding radii.
+// Remove strict mode for eval context.
 var code = require('fs').readFileSync('geometry.js', 'utf8');
 code = code.replace('"use strict";', '');
 eval(code);
 
+// Print the computed bounding radius for each mesh type so it can be compared against physics sizing.
 var m;
 m = generateCube(1.2, [0,0,0]);
 console.log('cube 1.2 boundingRadius:', m.boundingRadius);

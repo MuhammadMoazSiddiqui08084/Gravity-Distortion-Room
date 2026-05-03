@@ -1,8 +1,10 @@
 "use strict";
 
+// ASCII PLY loader used for the imported polyhedral meshes in the room.
 var GPly = {
     normalizeExtent: 1.6,
 
+    // Load a file, parse the PLY text, and convert it into the renderer's mesh layout.
     loadMesh: async function(filePath, color) {
         var response = await fetch(filePath);
         if (!response.ok) {
@@ -14,12 +16,14 @@ var GPly = {
         return this.toRenderableMesh(parsed, color || [0.8, 0.8, 0.8]);
     },
 
+    // Parse the subset of PLY that this project uses: ASCII vertices plus polygon faces.
     parseAsciiPly: function(data) {
         var lines = data.split(/\r?\n/);
         var vertexCount = 0;
         var faceCount = 0;
         var i = 0;
 
+        // Read the header to find the vertex and face counts.
         while (i < lines.length) {
             var headerLine = lines[i].trim();
             if (headerLine.indexOf("format ascii") === 0) {
@@ -36,6 +40,7 @@ var GPly = {
             i++;
         }
 
+        // Vertex list: only the first three position components are used.
         var vertices = [];
         var v;
         for (v = 0; v < vertexCount && i < lines.length; ) {
@@ -55,6 +60,7 @@ var GPly = {
             v++;
         }
 
+        // Face list: polygons are preserved so they can later be triangulated.
         var faces = [];
         var f;
         for (f = 0; f < faceCount && i < lines.length; ) {
@@ -76,12 +82,14 @@ var GPly = {
         };
     },
 
+    // Convert parsed PLY data into the same typed-array mesh format as geometry.js.
     toRenderableMesh: function(parsed, color) {
         var normalized = this.normalizeVertices(parsed.vertices, this.normalizeExtent);
         var tris = this.triangulateFaces(parsed.faces);
 
         var smoothNormalsByVertex = this.computeSmoothNormals(normalized, tris);
 
+        // Final render buffers are filled triangle by triangle.
         var positions = [];
         var flatNormals = [];
         var smoothNormals = [];
@@ -126,6 +134,7 @@ var GPly = {
             );
         }
 
+        // Wireframe edges are extracted separately so line rendering can reuse the same mesh.
         var wirePositions = this.buildWirePositions(normalized, parsed.faces);
         var radius = this.computeBoundingRadius(normalized);
 
@@ -141,6 +150,7 @@ var GPly = {
         };
     },
 
+    // Center the mesh at the origin and scale it to a predictable size.
     normalizeVertices: function(vertices, targetExtent) {
         if (!vertices.length) {
             return [];
@@ -184,6 +194,7 @@ var GPly = {
         return out;
     },
 
+    // Fan-triangulate each polygon face into a triangle list.
     triangulateFaces: function(faces) {
         var indices = [];
         var i;
@@ -197,6 +208,7 @@ var GPly = {
         return indices;
     },
 
+    // Average face normals per vertex to support smooth shading.
     computeSmoothNormals: function(vertices, triangleIndices) {
         var accum = [];
         var i;
@@ -233,6 +245,7 @@ var GPly = {
         return accum;
     },
 
+    // Build unique line segments for the wireframe draw mode.
     buildWirePositions: function(vertices, faces) {
         var edgeSet = {};
         var wire = [];
@@ -260,6 +273,7 @@ var GPly = {
         return wire;
     },
 
+    // Face normal from three triangle vertices.
     computeFaceNormal: function(a, b, c) {
         var ux = b[0] - a[0];
         var uy = b[1] - a[1];
@@ -276,6 +290,7 @@ var GPly = {
         ]);
     },
 
+    // Normalize a 3D vector and fall back to +Z when the length is tiny.
     normalizeVec3: function(v) {
         var len = Math.sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
         if (len <= 1e-8) {
@@ -284,6 +299,7 @@ var GPly = {
         return [v[0] / len, v[1] / len, v[2] / len];
     },
 
+    // Bounding radius is used by physics to approximate collision size.
     computeBoundingRadius: function(vertices) {
         var maxR2 = 0;
         var i;

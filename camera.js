@@ -1,44 +1,45 @@
 "use strict";
-//First-Person Camera with Pitch/Roll/Yaw
+// First-person camera controller.
+// app.js feeds keyboard and mouse input into this object, and the renderer reads its matrices.
 
 var GCamera = {
-    //Position in world space
+    // Camera position in world space.
     position: [0, 1.7, 0],
-    //Euler angles in degrees
-    pitch: 0,    //rotation about X axis
+    // Euler angles in degrees.
+    pitch: 0,    // rotation about X axis
     yaw: -90,    // rotation about Y axis
     roll: 0,     // rotation about Z axis
-    //Projection parameters
+    // Projection parameters used to build the frustum.
     fov: 60,
     near: 0.1,
     far: 100.0,
-    //View bound offsets for distortion effects
+    // View-bound offsets let the projection frustum skew if needed.
     viewLeft: 0,
     viewRight: 0,
     viewTop: 0,
     viewBottom: 0,
-    // Movement
+    // Movement tuning.
     speed: 5.0,
     sensitivity: 0.15,
     rollSpeed: 45.0,  //degrees per second
-    //room constraints
+    // Room constraints match the interior room volume from app.js.
     roomBounds: { minX:-7.5, maxX:7.5, minY:0.5, maxY:9.5, minZ:-7.5, maxZ:7.5 },
-    //state
+    // Keyboard state is tracked by key value so multiple keys can be held at once.
     keys: {},
 
-    //Get forward direction
+    // Compute the forward vector from the current yaw.
     getForward: function() {
         var yawRad = radians(this.yaw);
         return [Math.cos(yawRad), 0, Math.sin(yawRad)];
     },
 
-    //right direction
+    // Compute the right vector from the current yaw.
     getRight: function() {
         var yawRad = radians(this.yaw);
         return [-Math.sin(yawRad), 0, Math.cos(yawRad)];
     },
 
-    //look direction
+    // Combine yaw and pitch into the direction the camera is looking.
     getLookDir: function() {
         var yawRad = radians(this.yaw);
         var pitchRad = radians(this.pitch);
@@ -49,7 +50,7 @@ var GCamera = {
         ];
     },
 
-    //mouse movement
+    // Mouse movement updates yaw and pitch; pitch is clamped to avoid flipping.
     onMouseMove: function(dx, dy) {
         this.yaw   += dx * this.sensitivity;
         this.pitch -= dy * this.sensitivity;
@@ -58,7 +59,7 @@ var GCamera = {
         if (this.pitch < -89) this.pitch = -89;
     },
 
-    //camera position
+    // Integrate keyboard movement and keep the camera inside the room.
     update: function(dt) {
         var moveSpeed = this.speed * dt;
         var fwd = this.getForward();
@@ -86,7 +87,7 @@ var GCamera = {
         if (this.keys["Shift"]) { // Shift = move down
             this.position[1] -= moveSpeed;
         }
-        //Roll with Q/E
+        // Roll with Q/E for a true six-degree-of-freedom feel.
         if (this.keys["q"] || this.keys["Q"]) {
             this.roll -= this.rollSpeed * dt;
         }
@@ -94,14 +95,14 @@ var GCamera = {
             this.roll += this.rollSpeed * dt;
         }
 
-        //Clamp position to room bounds
+        // Clamp position to room bounds so the camera cannot leave the scene.
         var b = this.roomBounds;
         this.position[0] = Math.max(b.minX, Math.min(b.maxX, this.position[0]));
         this.position[1] = Math.max(b.minY, Math.min(b.maxY, this.position[1]));
         this.position[2] = Math.max(b.minZ, Math.min(b.maxZ, this.position[2]));
     },
 
-    //Build view matrix
+    // Build a look-at style view matrix using the current orientation.
     getViewMatrix: function() {
         var look = this.getLookDir();
         var target = [
@@ -109,11 +110,11 @@ var GCamera = {
             this.position[1] + look[1],
             this.position[2] + look[2]
         ];
-        //up vector with roll
+        // Up vector changes with roll so the world appears to tilt correctly.
         var rollRad = radians(this.roll);
         var up = [Math.sin(rollRad), Math.cos(rollRad), 0];
 
-        //lookAt matrix
+        // Standard camera basis construction for the final view matrix.
         var z = normalize([
             this.position[0] - target[0],
             this.position[1] - target[1],
@@ -140,7 +141,7 @@ var GCamera = {
         ];
     },
 
-    //perspective projection matrix
+    // Build a projection frustum from the current FOV and view offsets.
     getProjectionMatrix: function(aspect) {
         var fovRad = radians(this.fov) / 2.0;
         var top = this.near * Math.tan(fovRad) + this.viewTop;

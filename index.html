@@ -9,16 +9,16 @@
 </head>
 <body>
 
-<!--  WebGL Canvas  -->
+<!-- WebGL canvas: the entire 3D scene is rendered here. -->
 <canvas id="glcanvas"></canvas>
 
-<!-- Crosshair -->
+<!-- Center crosshair for first-person aiming. -->
 <div id="crosshair"></div>
 
-<!-- Click to Look Prompt -->
+<!-- Pointer-lock prompt shown before the mouse becomes camera input. -->
 <div id="click-prompt">CLICK TO ENTER</div>
 
-<!-- Status Info (top-left) -->
+<!-- HUD: live renderer, camera, and physics state. -->
 <div id="hud-info" class="glass-panel">
     <div class="hud-title">GRAVITY ROOM</div>
     <div class="hud-row"><span class="hud-label">Shading</span><span class="hud-value" id="info-shading">Smooth (Phong)</span></div>
@@ -29,12 +29,12 @@
     <div class="hud-row"><span class="hud-label">Far</span><span class="hud-value" id="info-far">100.0</span></div>
 </div>
 
-<!-- FPS (top-right) -->
+<!-- FPS readout so performance changes are visible immediately. -->
 <div id="hud-fps" class="glass-panel">
     <span id="info-fps">0</span> FPS
 </div>
 
-<!-- Help Panel -->
+<!-- Help panel: maps keys to the camera and renderer actions in app.js. -->
 <div id="help-panel" class="glass-panel">
     <div class="help-title">CONTROLS</div>
     <div class="help-row"><span class="help-key">W A S D</span><span class="help-desc">Move forward/left/back/right</span></div>
@@ -50,7 +50,7 @@
     <div class="help-row"><span class="help-key">H</span><span class="help-desc">Toggle this panel</span></div>
 </div>
 
-<!-- Gravity Control Panel(bottom center) -->
+<!-- Gravity controls feed directly into the physics module. -->
 <div id="gravity-panel" class="glass-panel">
     <div class="panel-title">GRAVITY</div>
     <div class="gravity-slider-wrap">
@@ -69,7 +69,7 @@
     <button class="reset-btn" id="reset-btn">RESET</button>
 </div>
 
-<!-- View Controls Panel (bottom right) -->
+<!-- View controls change the camera projection and clipping planes. -->
 <div id="view-panel" class="glass-panel">
     <div class="panel-title">VIEW BOUNDS</div>
     <div class="view-row">
@@ -89,7 +89,7 @@
     </div>
 </div>
 
-<!-- VERTEX SHADER -->
+<!-- Vertex shader: transforms object-space positions into clip space and forwards normals/colors. -->
 <script id="vertex-shader" type="x-shader/x-vertex">
 attribute vec3 aPosition;
 attribute vec3 aNormal;
@@ -113,7 +113,7 @@ void main() {
 }
 </script>
 
-<!-- FRAGMENT SHADER -->
+<!-- Fragment shader: handles wireframe, flat, and smooth Phong lighting. -->
 <script id="fragment-shader" type="x-shader/x-fragment">
 precision mediump float;
 
@@ -131,6 +131,7 @@ uniform int uRenderMode;       // 0 = wireframe, 1 = flat, 2 = smooth (phong)
 uniform vec3 uSolidColor;
 
 void main() {
+    // Wireframe mode bypasses all lighting and draws a solid line color.
     if (uRenderMode == 0) {
         gl_FragColor = vec4(uSolidColor, 1.0);
         return;
@@ -139,25 +140,26 @@ void main() {
     vec3 N = normalize(vWorldNormal);
     vec3 L = normalize(uLightDirection);
 
-    // Ambient
+    // Ambient term gives every surface a baseline visibility.
     vec3 ambient = uAmbientColor * vColor;
 
-    // Diffuse (Lambert)
+    // Diffuse term uses a Lambert-style light response.
     float NdotL = max(dot(N, L), 0.0);
     vec3 diffuse = NdotL * uLightColor * vColor;
 
-    if (uRenderMode == 1) { // True simplistic flat shading
+    // Flat mode stops after ambient + diffuse to keep surfaces faceted.
+    if (uRenderMode == 1) {
         gl_FragColor = vec4(ambient + diffuse, 1.0);
         return;
     }
 
-    // Specular (Phong reflection) for uRenderMode == 2
+    // Smooth mode adds Phong specular highlights and a subtle fill light.
     vec3 V = normalize(uCameraPosition - vWorldPosition);
     vec3 R = reflect(-L, N);
     float spec = pow(max(dot(V, R), 0.0), uShininess);
     vec3 specular = uSpecularStrength * spec * uLightColor;
 
-    // Add slight fill light from below for more depth
+    // Add a subtle fill light from below for extra depth.
     vec3 fillDir = normalize(vec3(-0.2, -0.5, -0.3));
     float fillDiff = max(dot(N, fillDir), 0.0) * 0.15;
     vec3 fill = fillDiff * vec3(0.3, 0.4, 0.6) * vColor;
@@ -167,6 +169,7 @@ void main() {
 }
 </script>
 
+<!-- Script order matters: shared math first, then utilities, then domain modules, then the app bootstrap. -->
 <script src="common.js"></script>
 <script src="webgl-utils.js"></script>
 <script src="initShaders.js"></script>

@@ -2,12 +2,13 @@
 //initShaders.js
 //
 
-//Compile and link a shader program from script tags.
+// Helper used by app.js to compile the inline GLSL from index.html and link it into one program.
 function initShaders( gl, vertexShaderId, fragmentShaderId )
 {
     var vertShdr;
     var fragShdr;
 
+    // Read the vertex shader source from the HTML script tag.
     var vertElem = document.getElementById( vertexShaderId );
     if ( !vertElem ) { 
         alert( "Unable to load vertex shader " + vertexShaderId );
@@ -25,6 +26,7 @@ function initShaders( gl, vertexShaderId, fragmentShaderId )
         }
     }
 
+    // Read the fragment shader source from the HTML script tag.
     var fragElem = document.getElementById( fragmentShaderId );
     if ( !fragElem ) { 
         alert( "Unable to load vertex shader " + fragmentShaderId );
@@ -42,6 +44,7 @@ function initShaders( gl, vertexShaderId, fragmentShaderId )
         }
     }
 
+    // Link both shaders into a single GPU program.
     var program = gl.createProgram();
     gl.attachShader( program, vertShdr );
     gl.attachShader( program, fragShdr );
